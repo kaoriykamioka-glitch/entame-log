@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>エンタメ記録</title>
+<style>
+  :root{
+    --ink:#1f2a3d;
+    --ink-soft:#5a6577;
+    --paper:#f2f3f0;
+    --card:#ffffff;
+    --spine:#31456b;
+    --accent:#b3402a;
+    --gold:#b3902a;
+    --line:#d8dad4;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{
+    font-family:"Hiragino Mincho ProN","Yu Mincho","BIZ UDMincho",serif;
+    background:var(--paper);color:var(--ink);min-height:100vh;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  header{
+    padding:24px 18px 12px;border-bottom:1px solid var(--line);
+    background:var(--paper);position:sticky;top:0;z-index:10;
+  }
+  h1{font-size:20px;font-weight:600;letter-spacing:.12em}
+  .count{font-size:12px;color:var(--ink-soft);margin-top:4px;letter-spacing:.06em}
+  .toolbar{display:flex;gap:8px;margin-top:12px}
+  .search{
+    flex:1;border:1px solid var(--line);border-radius:var(--radius);
+    padding:9px 13px;font-size:16px;background:var(--card);
+    font-family:inherit;color:var(--ink);outline:none;min-width:0;
+  }
+  .search:focus{border-color:var(--spine)}
+  select.sort{
+    border:1px solid var(--line);border-radius:var(--radius);
+    background:var(--card);font-family:inherit;font-size:13px;
+    padding:0 8px;color:var(--ink);outline:none;
+  }
+  .chips{
+    display:flex;gap:7px;overflow-x:auto;margin-top:11px;padding-bottom:4px;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none;
+  }
+  .chips::-webkit-scrollbar{display:none}
+  .chip{
+    flex-shrink:0;border:1px solid var(--line);background:var(--card);
+    color:var(--ink-soft);border-radius:20px;padding:6px 14px;
+    font-size:13px;font-family:inherit;letter-spacing:.06em;white-space:nowrap;
+  }
+  .chip.on{background:var(--spine);color:#fff;border-color:var(--spine)}
+  main{padding:14px 14px 120px;max-width:560px;margin:0 auto}
+  .month{margin-bottom:26px}
+  .month-head{
+    font-size:13px;color:var(--ink-soft);letter-spacing:.1em;
+    padding:4px 4px 10px;font-weight:600;
+  }
+  .card{
+    background:var(--card);border-radius:var(--radius);
+    border:1px solid var(--line);margin-bottom:9px;overflow:hidden;
+    box-shadow:0 1px 3px rgba(31,42,61,.05);
+  }
+  .card-top{display:flex}
+  .spine{
+    width:38px;background:var(--spine);color:#fff;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    writing-mode:vertical-rl;font-size:14px;letter-spacing:.15em;
+    padding:8px 0;overflow:hidden;
+  }
+  .body{flex:1;padding:12px 12px 11px;min-width:0;cursor:pointer}
+  .row1{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .date-label{font-size:12px;color:var(--ink-soft);letter-spacing:.05em}
+  .stars{font-size:12px;color:var(--gold);letter-spacing:.02em}
+  .title{font-size:16px;font-weight:600;letter-spacing:.03em;line-height:1.5;word-break:break-word;margin-top:4px}
+  .meta{font-size:13px;color:var(--ink-soft);margin-top:5px;letter-spacing:.03em;line-height:1.6}
+  .meta b{color:var(--spine);font-weight:600}
+  .detail{
+    max-height:0;overflow:hidden;transition:max-height .25s ease;
+    border-top:1px solid var(--line);
+  }
+  .detail.open{max-height:600px}
+  .detail-inner{padding:12px 14px 14px}
+  .detail-block{margin-bottom:10px}
+  .detail-block:last-child{margin-bottom:0}
+  .detail-label{font-size:11px;color:var(--ink-soft);letter-spacing:.1em;margin-bottom:3px}
+  .detail-text{font-size:14px;line-height:1.8;white-space:pre-wrap;word-break:break-word}
+  .actions{display:flex;gap:8px;padding:0 14px 12px;justify-content:flex-end}
+  .icon-btn{
+    border:1px solid var(--line);background:var(--paper);border-radius:9px;
+    width:32px;height:32px;font-size:13px;color:var(--ink-soft);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .icon-btn:active{background:var(--card)}
+  .empty{text-align:center;color:var(--ink-soft);padding:60px 20px;line-height:2;font-size:14px}
+  .fab{
+    position:fixed;right:18px;bottom:calc(22px + env(safe-area-inset-bottom));
+    width:56px;height:56px;border-radius:50%;border:none;
+    background:var(--spine);color:#fff;font-size:28px;line-height:1;
+    box-shadow:0 4px 14px rgba(31,42,61,.35);z-index:20;
+  }
+  .fab:active{transform:scale(.95)}
+  .overlay{
+    position:fixed;inset:0;background:rgba(31,42,61,.45);
+    display:none;align-items:flex-end;justify-content:center;z-index:30;
+  }
+  .overlay.show{display:flex}
+  .sheet{
+    background:var(--card);width:100%;max-width:560px;max-height:90vh;overflow-y:auto;
+    border-radius:20px 20px 0 0;padding:20px 20px calc(22px + env(safe-area-inset-bottom));
+  }
+  .sheet h2{font-size:16px;letter-spacing:.1em;margin-bottom:14px;font-weight:600}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:12px;color:var(--ink-soft);letter-spacing:.1em;margin-bottom:5px}
+  .field input, .field textarea{
+    width:100%;border:1px solid var(--line);border-radius:11px;
+    padding:11px 13px;font-size:16px;font-family:inherit;color:var(--ink);
+    background:var(--paper);outline:none;
+  }
+  .field textarea{resize:vertical;min-height:64px;line-height:1.6}
+  .field input:focus, .field textarea:focus{border-color:var(--spine);background:var(--card)}
+  .two-col{display:flex;gap:10px}
+  .two-col .field{flex:1}
+  .genre-picks{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+  .genre-pick{
+    border:1px solid var(--line);background:var(--paper);color:var(--ink-soft);
+    border-radius:20px;padding:6px 12px;font-size:12px;font-family:inherit;letter-spacing:.04em;
+  }
+  .genre-pick.on{background:var(--spine);color:#fff;border-color:var(--spine)}
+  .star-picker{display:flex;gap:6px;font-size:26px;color:var(--line);line-height:1}
+  .star-picker span{cursor:pointer}
+  .star-picker span.on{color:var(--gold)}
+  .sheet-btns{display:flex;gap:10px;margin-top:16px}
+  .btn{flex:1;border:none;border-radius:11px;padding:13px;font-size:15px;font-family:inherit;letter-spacing:.08em}
+  .btn.primary{background:var(--spine);color:#fff}
+  .btn.ghost{background:var(--paper);color:var(--ink-soft);border:1px solid var(--line)}
+  .btn:active{opacity:.85}
+  footer{max-width:560px;margin:0 auto;padding:0 16px 8px;display:flex;gap:8px;justify-content:center}
+  .link-btn{
+    border:none;background:none;color:var(--ink-soft);font-size:12px;
+    font-family:inherit;text-decoration:underline;letter-spacing:.06em;padding:6px;
+  }
+  .note{max-width:560px;margin:0 auto;padding:0 20px 16px;font-size:11px;color:var(--ink-soft);text-align:center}
+  .toast{
+    position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));
+    transform:translateX(-50%);background:var(--ink);color:#fff;
+    padding:9px 18px;border-radius:20px;font-size:13px;letter-spacing:.06em;
+    opacity:0;transition:opacity .3s;pointer-events:none;z-index:40;white-space:nowrap;
+  }
+  .toast.show{opacity:1}
+  .help-text{font-size:11px;color:var(--ink-soft);margin-top:6px;line-height:1.6}
+  .ics-toolbar{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+    margin-top:14px;font-size:12px;color:var(--ink-soft);flex-wrap:wrap;
+  }
+  .ics-toolbar label{display:flex;align-items:center;gap:6px}
+  .ics-list{max-height:44vh;overflow-y:auto;border:1px solid var(--line);border-radius:11px;margin-top:10px}
+  .ics-row{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-bottom:1px solid var(--line)}
+  .ics-row:last-child{border-bottom:none}
+  .ics-row input[type=checkbox]{margin-top:3px;flex-shrink:0;width:18px;height:18px}
+  .ics-row .info{flex:1;min-width:0}
+  .ics-row .info .t{font-size:14px;font-weight:600;word-break:break-word}
+  .ics-row .info .m{font-size:12px;color:var(--ink-soft);margin-top:3px;line-height:1.6}
+  .genre-badge{
+    display:inline-block;font-size:11px;color:var(--spine);
+    border:1px solid var(--spine);border-radius:10px;padding:1px 8px;margin-top:4px;
+  }
+  .ics-empty{padding:26px 16px;text-align:center;color:var(--ink-soft);font-size:13px;line-height:1.8}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>エンタメ記録</h1>
+  <div class="count" id="count"></div>
+  <div class="toolbar">
+    <input class="search" id="search" type="search" placeholder="タイトル・出演者・場所で検索">
+    <select class="sort" id="sort">
+      <option value="desc">新しい順</option>
+      <option value="asc">古い順</option>
+    </select>
+  </div>
+  <div class="chips" id="chips"></div>
+</header>
+
+<main><div id="list"></div></main>
+
+<footer>
+  <button class="link-btn" onclick="openIcsSheet()">カレンダーから取り込む</button>
+  <button class="link-btn" onclick="exportJSON()">書き出し（保存用）</button>
+  <button class="link-btn" onclick="document.getElementById('importFile').click()">読み込み</button>
+  <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)">
+</footer>
+<div class="note">iPhoneのSafariで開くと、追加・編集した内容は端末に自動保存されます。</div>
+
+<button class="fab" onclick="openSheet()" aria-label="記録を追加">＋</button>
+
+<div class="overlay" id="overlay" onclick="if(event.target===this)closeSheet()">
+  <div class="sheet">
+    <h2 id="sheetTitle">記録を追加</h2>
+
+    <div class="field">
+      <label>ジャンル</label>
+      <div class="genre-picks" id="genrePicks"></div>
+      <input id="inGenre" type="text" placeholder="例：演劇、映画、コンサート、落語…">
+    </div>
+
+    <div class="two-col">
+      <div class="field"><label>日付</label><input id="inDate" type="date"></div>
+      <div class="field"><label>時刻（任意）</label><input id="inTime" type="time"></div>
+    </div>
+
+    <div class="field"><label>タイトル</label><input id="inTitle" type="text" placeholder="例：ハムレット"></div>
+    <div class="field"><label>場所</label><input id="inPlace" type="text" placeholder="例：東京芸術劇場"></div>
+    <div class="field">
+      <label>出演者</label>
+      <textarea id="inPerformers" placeholder="例：〇〇、△△（カンマ区切りや改行区切りで）"></textarea>
+      <button type="button" class="link-btn" style="padding-left:0" onclick="searchWebForCast()">🔍 Webで配役を調べる</button>
+    </div>
+
+    <div class="field">
+      <label>評価</label>
+      <div class="star-picker" id="starPicker">
+        <span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span>
+      </div>
+    </div>
+
+    <div class="field"><label>劇評（取れれば・新聞や雑誌の批評の引用/リンクなど）</label><textarea id="inReview" placeholder="劇評があれば書き写し・リンクなど"></textarea></div>
+    <div class="field"><label>感想</label><textarea id="inImpression" placeholder="自分の感想"></textarea></div>
+
+    <div class="sheet-btns">
+      <button class="btn ghost" onclick="closeSheet()">キャンセル</button>
+      <button class="btn primary" onclick="saveEntry()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="icsOverlay" onclick="if(event.target===this)closeIcsSheet()">
+  <div class="sheet">
+    <h2>カレンダーから取り込む</h2>
+    <div class="field">
+      <label>ICSファイル</label>
+      <button type="button" onclick="document.getElementById('icsFileInput').click()">ICSファイルを選ぶ</button>
+      <input type="file" id="icsFileInput" accept=".ics,text/calendar" style="display:none">
+      <div class="help-text" id="icsFileName">Googleカレンダーの設定 →「カレンダーの統合」にある該当カレンダーの「エクスポート」から書き出したicsファイルを選んでください。</div>
+    </div>
+    <div class="ics-toolbar">
+      <label><input type="checkbox" id="chkIcsShowAll" onchange="toggleIcsShowAll()"> すべての予定を表示</label>
+      <span>芝居・映画などのキーワードで自動絞り込み中</span>
+    </div>
+    <div class="ics-list" id="icsList"><div class="ics-empty">ICSファイルを選択してください</div></div>
+    <div class="sheet-btns">
+      <button class="btn ghost" onclick="closeIcsSheet()">閉じる</button>
+      <button class="btn primary" id="icsImportBtn" onclick="importSelectedIcs()" disabled>選択した予定を取り込む（0件）</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY = 'entame-log-v1';
+const GENRE_PRESETS = ['演劇','ミュージカル','歌舞伎','文楽','能・狂言','落語','朗読会','映画','音楽・コンサート','美術展','その他'];
+
+const GENRE_COLOR_MAP = {
+  '演劇':'#31456b', 'ミュージカル':'#7d3c53', '歌舞伎':'#b3402a', '文楽':'#6b4a30',
+  '能・狂言':'#3f5d43', '落語':'#8a6d1f', '朗読会':'#5c5590', '映画':'#2b3a4a',
+  '音楽・コンサート':'#a3455a', '美術展':'#2f6b63', 'その他':'#6b7280'
+};
+const GENRE_PALETTE = Object.values(GENRE_COLOR_MAP);
+
+function genreColor(g){
+  g = (g||'').trim() || 'その他';
+  if(GENRE_COLOR_MAP[g]) return GENRE_COLOR_MAP[g];
+  let h = 0;
+  for(let i=0;i<g.length;i++){ h = (h*31 + g.charCodeAt(i)) >>> 0; }
+  return GENRE_PALETTE[h % GENRE_PALETTE.length];
+}
+
+let entries = [];
+let editingId = null;
+let storageOK = true;
+let genreFilter = 'all';
+let currentRating = 0;
+let expandedId = null;
+
+try{
+  localStorage.setItem('__t__','1'); localStorage.removeItem('__t__');
+  const saved = localStorage.getItem(KEY);
+  entries = saved ? JSON.parse(saved) : [];
+}catch(e){
+  storageOK = false;
+  entries = [];
+}
+
+function persist(){
+  if(!storageOK) return;
+  try{ localStorage.setItem(KEY, JSON.stringify(entries)); }catch(e){}
+}
+
+function esc(s){
+  return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function escNl(s){
+  return esc(s).replace(/\n/g,'<br>');
+}
+
+function fmtDate(d){
+  if(!d) return '（日付不明）';
+  const [y,m,day] = d.split('-');
+  return `${y}年${+m}月${+day}日`;
+}
+
+function fmtDateShort(d){
+  if(!d) return '日付不明';
+  const [y,m,day] = d.split('-');
+  return `${+m}/${+day}`;
+}
+
+function starsStr(n){
+  n = +n || 0;
+  return '★'.repeat(n) + '☆'.repeat(5-n);
+}
+
+function renderChips(){
+  const genres = [...new Set(entries.map(e=>e.genre).filter(Boolean))];
+  const el = document.getElementById('chips');
+  el.innerHTML =
+    `<button class="chip ${genreFilter==='all'?'on':''}" onclick="setFilter('all')">すべて</button>` +
+    genres.map(g=>{
+      const c = genreColor(g);
+      const on = genreFilter===g;
+      const style = on ? `background:${c};border-color:${c};color:#fff` : `border-color:${c};color:${c}`;
+      return `<button class="chip" style="${style}" onclick="setFilter('${esc(g)}')">${esc(g)}</button>`;
+    }).join('');
+}
+
+function setFilter(g){ genreFilter = g; renderChips(); render(); }
+
+function render(){
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  const order = document.getElementById('sort').value;
+  let items = entries.slice();
+  if(genreFilter !== 'all') items = items.filter(e=>e.genre===genreFilter);
+  if(q) items = items.filter(e=>
+    (e.title+e.performers+e.place+e.genre+e.review+e.impression).toLowerCase().includes(q)
+  );
+
+  const total = entries.length;
+  const shown = items.length;
+  document.getElementById('count').textContent =
+    genreFilter==='all' && !q ? `全 ${total} 件` : `${shown} 件を表示（全 ${total} 件）`;
+
+  const list = document.getElementById('list');
+  if(!items.length){
+    list.innerHTML = `<div class="empty">${total===0 ? '右下の＋から記録を追加してください' : '該当する記録がありません'}</div>`;
+    return;
+  }
+
+  items.sort((a,b)=>{
+    const da = a.date || '', db = b.date || '';
+    if(da === db) return 0;
+    return order === 'desc' ? (da < db ? 1 : -1) : (da > db ? 1 : -1);
+  });
+
+  // 月ごとにグループ化
+  const groups = {};
+  const order_keys = [];
+  items.forEach(e=>{
+    const key = e.date ? e.date.slice(0,7) : '不明';
+    if(!groups[key]){ groups[key] = []; order_keys.push(key); }
+    groups[key].push(e);
+  });
+
+  list.innerHTML = order_keys.map(key=>{
+    const g = groups[key];
+    const label = key==='不明' ? '日付不明' : `${key.split('-')[0]}年${+key.split('-')[1]}月`;
+    return `
+    <div class="month">
+      <div class="month-head">${label}</div>
+      ${g.map(e=>renderCard(e)).join('')}
+    </div>`;
+  }).join('');
+}
+
+function renderCard(e){
+  const open = expandedId === e.id;
+  const hasDetail = e.review || e.impression;
+  return `
+    <div class="card">
+      <div class="card-top">
+        <div class="spine" style="background:${genreColor(e.genre)}">${esc(e.genre||'その他').slice(0,6)}</div>
+        <div class="body" onclick="toggleExpand('${e.id}')">
+          <div class="row1">
+            <span class="date-label">${fmtDate(e.date)}${e.time ? ' '+esc(e.time) : ''}</span>
+            ${e.rating ? `<span class="stars">${starsStr(e.rating)}</span>` : ''}
+          </div>
+          <div class="title">${esc(e.title)}</div>
+          <div class="meta">
+            ${e.place ? `<b>場所</b>：${esc(e.place)}<br>` : ''}
+            ${e.performers ? `<b>出演</b>：${escNl(e.performers)}` : ''}
+          </div>
+        </div>
+      </div>
+      ${hasDetail ? `
+      <div class="detail ${open?'open':''}" id="detail-${e.id}">
+        <div class="detail-inner">
+          ${e.review ? `<div class="detail-block"><div class="detail-label">劇評</div><div class="detail-text">${esc(e.review)}</div></div>` : ''}
+          ${e.impression ? `<div class="detail-block"><div class="detail-label">感想</div><div class="detail-text">${esc(e.impression)}</div></div>` : ''}
+        </div>
+      </div>` : ''}
+      <div class="actions">
+        <button class="icon-btn" onclick="openSheet('${e.id}')" aria-label="編集">✎</button>
+        <button class="icon-btn" onclick="removeEntry('${e.id}')" aria-label="削除">🗑</button>
+      </div>
+    </div>`;
+}
+
+function toggleExpand(id){
+  expandedId = expandedId === id ? null : id;
+  render();
+}
+
+function renderGenrePicks(selected){
+  const el = document.getElementById('genrePicks');
+  el.innerHTML = GENRE_PRESETS.map(g=>{
+    const c = genreColor(g);
+    const on = g===selected;
+    const style = on ? `background:${c};border-color:${c};color:#fff` : `border-color:${c};color:${c}`;
+    return `<button type="button" class="genre-pick" style="${style}" onclick="pickGenre('${esc(g)}')">${esc(g)}</button>`;
+  }).join('');
+}
+
+function pickGenre(g){
+  document.getElementById('inGenre').value = g;
+  renderGenrePicks(g);
+}
+
+function renderStars(){
+  const el = document.getElementById('starPicker');
+  [...el.children].forEach(s=>{
+    s.classList.toggle('on', +s.dataset.v <= currentRating);
+  });
+}
+
+document.getElementById('starPicker').addEventListener('click', (ev)=>{
+  const t = ev.target.closest('span');
+  if(!t) return;
+  const v = +t.dataset.v;
+  currentRating = (currentRating === v) ? 0 : v;
+  renderStars();
+});
+
+document.getElementById('inGenre').addEventListener('input', ()=>{
+  renderGenrePicks(document.getElementById('inGenre').value.trim());
+});
+
+function openSheet(id){
+  editingId = id || null;
+  document.getElementById('sheetTitle').textContent = id ? '記録を編集' : '記録を追加';
+  const e = id ? entries.find(x=>x.id===id) : null;
+  document.getElementById('inGenre').value = e ? (e.genre||'') : '';
+  document.getElementById('inDate').value = e ? (e.date||'') : new Date().toISOString().slice(0,10);
+  document.getElementById('inTime').value = e ? (e.time||'') : '';
+  document.getElementById('inTitle').value = e ? e.title : '';
+  document.getElementById('inPlace').value = e ? (e.place||'') : '';
+  document.getElementById('inPerformers').value = e ? (e.performers||'') : '';
+  document.getElementById('inReview').value = e ? (e.review||'') : '';
+  document.getElementById('inImpression').value = e ? (e.impression||'') : '';
+  currentRating = e ? (+e.rating||0) : 0;
+  renderStars();
+  renderGenrePicks(e ? (e.genre||'') : '');
+  document.getElementById('overlay').classList.add('show');
+}
+
+function closeSheet(){
+  document.getElementById('overlay').classList.remove('show');
+  editingId = null;
+}
+
+function searchWebForCast(){
+  const title = document.getElementById('inTitle').value.trim();
+  const place = document.getElementById('inPlace').value.trim();
+  if(!title){ toast('タイトルを入力してから検索してください'); return; }
+  const q = encodeURIComponent(`${title} ${place} 配役 出演`.trim());
+  window.open(`https://www.google.com/search?q=${q}`, '_blank', 'noopener');
+}
+
+function saveEntry(){
+  const genre = document.getElementById('inGenre').value.trim();
+  const date = document.getElementById('inDate').value;
+  const time = document.getElementById('inTime').value;
+  const title = document.getElementById('inTitle').value.trim();
+  const place = document.getElementById('inPlace').value.trim();
+  const performers = document.getElementById('inPerformers').value.trim();
+  const review = document.getElementById('inReview').value.trim();
+  const impression = document.getElementById('inImpression').value.trim();
+  if(!title){ toast('タイトルを入力してください'); return; }
+
+  if(editingId){
+    const e = entries.find(x=>x.id===editingId);
+    if(e){ Object.assign(e, {genre, date, time, title, place, performers, review, impression, rating: currentRating}); }
+    toast('更新しました');
+  }else{
+    entries.push({
+      id:'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
+      genre, date, time, title, place, performers, review, impression, rating: currentRating
+    });
+    toast('追加しました');
+  }
+  persist(); renderChips(); render(); closeSheet();
+}
+
+function removeEntry(id){
+  const e = entries.find(x=>x.id===id);
+  if(!e) return;
+  if(!confirm(`「${e.title}」を削除しますか？`)) return;
+  entries = entries.filter(x=>x.id!==id);
+  persist(); renderChips(); render(); toast('削除しました');
+}
+
+function exportJSON(){
+  const blob = new Blob([JSON.stringify(entries,null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'エンタメ記録.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importJSON(ev){
+  const file = ev.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const data = JSON.parse(reader.result);
+      if(!Array.isArray(data)) throw new Error();
+      entries = data.filter(e=>e && e.title).map(e=>({
+        id: e.id || 'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
+        genre: String(e.genre||''), date: String(e.date||''), time: String(e.time||''),
+        title: String(e.title), place: String(e.place||''),
+        performers: String(e.performers||''), review: String(e.review||''),
+        impression: String(e.impression||''), rating: +e.rating||0
+      }));
+      persist(); renderChips(); render(); toast('読み込みました');
+    }catch(e){ toast('ファイルを読み込めませんでした'); }
+  };
+  reader.readAsText(file);
+  ev.target.value = '';
+}
+
+let toastTimer;
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'),1800);
+}
+
+document.getElementById('search').addEventListener('input', render);
+document.getElementById('sort').addEventListener('change', render);
+renderChips();
+render();
+
+/* ===================== カレンダー(ICS)取り込み ===================== */
+
+const GENRE_RULES = [
+  {genre:'歌舞伎', kws:['歌舞伎']},
+  {genre:'文楽', kws:['文楽']},
+  {genre:'能・狂言', kws:['能楽','狂言']},
+  {genre:'演劇', kws:['芝居','演劇','舞台','戯曲','公演']},
+  {genre:'ミュージカル', kws:['ミュージカル']},
+  {genre:'映画', kws:['映画','シネマ','上映']},
+  {genre:'音楽・コンサート', kws:['コンサート','ライブ','リサイタル','オーケストラ']},
+  {genre:'落語', kws:['落語','寄席','独演会']},
+  {genre:'朗読会', kws:['朗読']},
+  {genre:'美術展', kws:['展覧会','美術展','個展']}
+];
+const ALL_ICS_KEYWORDS = GENRE_RULES.flatMap(r=>r.kws);
+
+function guessGenre(text){
+  for(const rule of GENRE_RULES){
+    if(rule.kws.some(k=>text.includes(k))) return rule.genre;
+  }
+  return '';
+}
+
+function matchesIcsKeyword(text){
+  return ALL_ICS_KEYWORDS.some(k=>text.includes(k));
+}
+
+function unfoldICS(text){
+  const lines = text.replace(/\r\n/g,'\n').split('\n');
+  const out = [];
+  for(const line of lines){
+    if((line.startsWith(' ') || line.startsWith('\t')) && out.length){
+      out[out.length-1] += line.slice(1);
+    }else{
+      out.push(line);
+    }
+  }
+  return out;
+}
+
+function unescapeICSText(s){
+  return s.replace(/\\n/gi,'\n').replace(/\\,/g,',').replace(/\\;/g,';').replace(/\\\\/g,'\\');
+}
+
+function parseICSDate(value, params){
+  const m = value.match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2}))?(Z)?$/);
+  if(!m) return null;
+  const [, y, mo, d, hh, mi, ss, z] = m;
+  if(!hh){
+    return { date: `${y}-${mo}-${d}`, time: '' };
+  }
+  if(z){
+    const utc = new Date(Date.UTC(+y, +mo-1, +d, +hh, +mi, +(ss||0)));
+    const yy = utc.getFullYear(), mm = String(utc.getMonth()+1).padStart(2,'0'), dd = String(utc.getDate()).padStart(2,'0');
+    const HH = String(utc.getHours()).padStart(2,'0'), MM = String(utc.getMinutes()).padStart(2,'0');
+    return { date:`${yy}-${mm}-${dd}`, time:`${HH}:${MM}` };
+  }
+  return { date:`${y}-${mo}-${d}`, time:`${hh}:${mi}` };
+}
+
+function parseICS(text){
+  const lines = unfoldICS(text);
+  const events = [];
+  let cur = null;
+  for(const raw of lines){
+    const line = raw.trim();
+    if(line === 'BEGIN:VEVENT'){ cur = {}; continue; }
+    if(line === 'END:VEVENT'){ if(cur) events.push(cur); cur = null; continue; }
+    if(!cur) continue;
+    const colonIdx = line.indexOf(':');
+    if(colonIdx === -1) continue;
+    const left = line.slice(0, colonIdx);
+    const value = line.slice(colonIdx+1);
+    const semiIdx = left.indexOf(';');
+    const prop = (semiIdx===-1 ? left : left.slice(0,semiIdx)).toUpperCase();
+    const params = semiIdx===-1 ? '' : left.slice(semiIdx+1);
+    if(prop === 'SUMMARY') cur.title = unescapeICSText(value);
+    else if(prop === 'LOCATION') cur.location = unescapeICSText(value);
+    else if(prop === 'DTSTART'){
+      const parsed = parseICSDate(value, params);
+      if(parsed){ cur.date = parsed.date; cur.time = parsed.time; }
+    }
+  }
+  return events.filter(e=>e.title && e.date);
+}
+
+let icsEvents = [];
+let icsSelected = new Set();
+
+function openIcsSheet(){
+  icsEvents = [];
+  icsSelected = new Set();
+  document.getElementById('chkIcsShowAll').checked = false;
+  document.getElementById('icsFileName').textContent =
+    'Googleカレンダーの設定 →「カレンダーの統合」にある該当カレンダーの「エクスポート」から書き出したicsファイルを選んでください。';
+  renderIcsList();
+  document.getElementById('icsOverlay').classList.add('show');
+}
+
+function closeIcsSheet(){
+  document.getElementById('icsOverlay').classList.remove('show');
+}
+
+function handleIcsFile(ev){
+  const file = ev.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      icsEvents = parseICS(reader.result);
+      icsSelected = new Set();
+      icsEvents.forEach((e,i)=>{
+        if(matchesIcsKeyword((e.title||'')+(e.location||''))) icsSelected.add(i);
+      });
+      document.getElementById('icsFileName').textContent =
+        icsEvents.length ? `${file.name}（${icsEvents.length}件の予定を読み込みました）` : `${file.name}（予定が見つかりませんでした）`;
+      renderIcsList();
+    }catch(err){
+      toast('ICSファイルを読み込めませんでした');
+    }
+  };
+  reader.readAsText(file);
+  ev.target.value = '';
+}
+
+function toggleIcsShowAll(){
+  renderIcsList();
+}
+
+function renderIcsList(){
+  const list = document.getElementById('icsList');
+  const showAll = document.getElementById('chkIcsShowAll').checked;
+  const indices = icsEvents.map((e,i)=>i).filter(i=>{
+    if(showAll) return true;
+    const e = icsEvents[i];
+    return matchesIcsKeyword((e.title||'')+(e.location||'')) || icsSelected.has(i);
+  });
+  indices.sort((a,b)=> (icsEvents[a].date||'').localeCompare(icsEvents[b].date||''));
+
+  if(!icsEvents.length){
+    list.innerHTML = `<div class="ics-empty">ICSファイルを選択してください</div>`;
+  }else if(!indices.length){
+    list.innerHTML = `<div class="ics-empty">キーワードに一致する予定がありません。「すべての予定を表示」をお試しください</div>`;
+  }else{
+    list.innerHTML = indices.map(i=>{
+      const e = icsEvents[i];
+      const genre = guessGenre((e.title||'')+(e.location||''));
+      return `
+      <div class="ics-row">
+        <input type="checkbox" ${icsSelected.has(i)?'checked':''} onchange="toggleIcsSelect(${i}, this.checked)">
+        <div class="info">
+          <div class="t">${esc(e.title)}</div>
+          <div class="m">${fmtDate(e.date)}${e.time?' '+esc(e.time):''}${e.location?' ・ '+esc(e.location):''}</div>
+          ${genre ? `<span class="genre-badge" style="color:${genreColor(genre)};border-color:${genreColor(genre)}">${esc(genre)}</span>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+  updateIcsImportBtn();
+}
+
+function toggleIcsSelect(i, checked){
+  if(checked) icsSelected.add(i); else icsSelected.delete(i);
+  updateIcsImportBtn();
+}
+
+function updateIcsImportBtn(){
+  const btn = document.getElementById('icsImportBtn');
+  btn.textContent = `選択した予定を取り込む（${icsSelected.size}件）`;
+  btn.disabled = icsSelected.size === 0;
+}
+
+function importSelectedIcs(){
+  let added = 0, skipped = 0;
+  icsSelected.forEach(i=>{
+    const e = icsEvents[i];
+    if(!e) return;
+    const dup = entries.some(x=>x.title===e.title && x.date===e.date);
+    if(dup){ skipped++; return; }
+    entries.push({
+      id:'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
+      genre: guessGenre((e.title||'')+(e.location||'')),
+      date: e.date||'', time: e.time||'', title: e.title,
+      place: e.location||'', performers:'', review:'', impression:'', rating:0
+    });
+    added++;
+  });
+  persist(); renderChips(); render();
+  closeIcsSheet();
+  toast(skipped ? `${added}件を取り込みました（重複${skipped}件をスキップ）` : `${added}件を取り込みました`);
+}
+
+document.getElementById('icsFileInput').addEventListener('change', handleIcsFile);
+</script>
+</body>
+</html>
