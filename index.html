@@ -93,6 +93,7 @@
   .detail-block:last-child{margin-bottom:0}
   .detail-label{font-size:11px;color:var(--ink-soft);letter-spacing:.1em;margin-bottom:3px}
   .detail-text{font-size:14px;line-height:1.8;white-space:pre-wrap;word-break:break-word}
+  .detail-text a{color:var(--spine);word-break:break-all}
   .actions{display:flex;gap:8px;padding:0 14px 12px;justify-content:flex-end}
   .icon-btn{
     border:1px solid var(--line);background:var(--paper);border-radius:9px;
@@ -268,7 +269,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const BUILD_ID = '2026-07-12-6'; // 更新のたびにこの値を変更する（キャッシュ検知用）
+const BUILD_ID = '2026-07-12-7'; // 更新のたびにこの値を変更する（キャッシュ検知用）
 (function(){
   try{
     var already = sessionStorage.getItem('entame-log-cachecheck');
@@ -365,6 +366,15 @@ function esc(s){
 
 function escNl(s){
   return esc(s).replace(/\n/g,'<br>');
+}
+
+function linkify(s){
+  return escNl(s).replace(/(https?:\/\/[^\s<]+)/g, function(url){
+    let trail = '';
+    const m = url.match(/[)\]｝」』。、,.]+$/);
+    if(m){ trail = m[0]; url = url.slice(0, -trail.length); }
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>${trail}`;
+  });
 }
 
 function fmtDate(d){
@@ -466,8 +476,8 @@ function renderCard(e){
       </div>
       <div class="detail ${open?'open':''}" id="detail-${e.id}">
         <div class="detail-inner">
-          <div class="detail-block"><div class="detail-label">劇評</div><div class="detail-text">${e.review ? esc(e.review) : '（未入力）'}</div></div>
-          <div class="detail-block"><div class="detail-label">感想</div><div class="detail-text">${e.impression ? esc(e.impression) : '（未入力）'}</div></div>
+          <div class="detail-block"><div class="detail-label">劇評</div><div class="detail-text">${e.review ? linkify(e.review) : '（未入力）'}</div></div>
+          <div class="detail-block"><div class="detail-label">感想</div><div class="detail-text">${e.impression ? linkify(e.impression) : '（未入力）'}</div></div>
         </div>
       </div>
       <div class="actions">
