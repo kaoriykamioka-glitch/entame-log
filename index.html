@@ -81,7 +81,9 @@
   .stars{font-size:12px;color:var(--gold);letter-spacing:.02em}
   .title{font-size:16px;font-weight:600;letter-spacing:.03em;line-height:1.5;word-break:break-word;margin-top:4px}
   .program-line{font-size:13px;color:var(--accent);margin-top:4px;line-height:1.6;word-break:break-word}
+  .program-line a{color:var(--accent);word-break:break-all}
   .meta{font-size:13px;color:var(--ink-soft);margin-top:5px;letter-spacing:.03em;line-height:1.6}
+  .meta a{color:var(--spine);word-break:break-all}
   .meta b{color:var(--spine);font-weight:600}
   .detail{
     max-height:0;overflow:hidden;transition:max-height .25s ease;
@@ -269,7 +271,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const BUILD_ID = '2026-07-12-7'; // 更新のたびにこの値を変更する（キャッシュ検知用）
+const BUILD_ID = '2026-07-12-8'; // 更新のたびにこの値を変更する（キャッシュ検知用）
 (function(){
   try{
     var already = sessionStorage.getItem('entame-log-cachecheck');
@@ -373,7 +375,7 @@ function linkify(s){
     let trail = '';
     const m = url.match(/[)\]｝」』。、,.]+$/);
     if(m){ trail = m[0]; url = url.slice(0, -trail.length); }
-    return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>${trail}`;
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${url}</a>${trail}`;
   });
 }
 
@@ -467,10 +469,10 @@ function renderCard(e){
             ${e.rating ? `<span class="stars">${starsStr(e.rating)}</span>` : ''}
           </div>
           <div class="title">${esc(e.title)}</div>
-          ${e.program ? `<div class="program-line">${escNl(e.program)}</div>` : ''}
+          ${e.program ? `<div class="program-line">${linkify(e.program)}</div>` : ''}
           <div class="meta">
             ${e.place ? `<b>場所</b>：${esc(e.place)}<br>` : ''}
-            ${e.performers ? `<b>出演</b>：${escNl(e.performers)}` : ''}
+            ${e.performers ? `<b>出演</b>：${linkify(e.performers)}` : ''}
           </div>
         </div>
       </div>
