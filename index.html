@@ -6,7 +6,10 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>エンタメ記録</title>
+<title>かをりんのエンタメノート</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hachi+Maru+Pop&family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
     --ink:#1f2a3d;
@@ -21,7 +24,7 @@
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   body{
-    font-family:"Hiragino Mincho ProN","Yu Mincho","BIZ UDMincho",serif;
+    font-family:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif;
     background:var(--paper);color:var(--ink);min-height:100vh;
     padding-bottom:env(safe-area-inset-bottom);
   }
@@ -29,7 +32,7 @@
     padding:24px 18px 12px;border-bottom:1px solid var(--line);
     background:var(--paper);position:sticky;top:0;z-index:10;
   }
-  h1{font-size:20px;font-weight:600;letter-spacing:.12em}
+  h1{font-family:"Hachi Maru Pop",sans-serif;font-size:22px;font-weight:400;letter-spacing:.08em;color:var(--spine)}
   .count{font-size:12px;color:var(--ink-soft);margin-top:4px;letter-spacing:.06em}
   .toolbar{display:flex;gap:8px;margin-top:12px}
   .search{
@@ -176,7 +179,7 @@
 <body>
 
 <header>
-  <h1>エンタメ記録</h1>
+  <h1>かをりんのエンタメノート</h1>
   <div class="count" id="count"></div>
   <div class="toolbar">
     <input class="search" id="search" type="search" placeholder="タイトル・出演者・場所で検索">
@@ -265,7 +268,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const BUILD_ID = '2026-07-12-2'; // 更新のたびにこの値を変更する（キャッシュ検知用）
+const BUILD_ID = '2026-07-12-3'; // 更新のたびにこの値を変更する（キャッシュ検知用）
 (function(){
   try{
     var already = sessionStorage.getItem('entame-log-cachecheck');
@@ -305,12 +308,12 @@ async function apiCall(action, payload){
   if(!data.ok) throw new Error(data.error || 'API error');
   return data.entries;
 }
-const GENRE_PRESETS = ['演劇','ミュージカル','歌舞伎','文楽','能・狂言','落語','朗読会','映画','音楽・コンサート','美術展','その他'];
+const GENRE_PRESETS = ['演劇','ミュージカル','歌舞伎','文楽','能・狂言','落語','朗読会','映画','音楽・コンサート','美術展','街歩き・旅行','その他'];
 
 const GENRE_COLOR_MAP = {
   '演劇':'#31456b', 'ミュージカル':'#7d3c53', '歌舞伎':'#b3402a', '文楽':'#6b4a30',
   '能・狂言':'#3f5d43', '落語':'#8a6d1f', '朗読会':'#5c5590', '映画':'#2b3a4a',
-  '音楽・コンサート':'#a3455a', '美術展':'#2f6b63', 'その他':'#6b7280'
+  '音楽・コンサート':'#a3455a', '美術展':'#2f6b63', '街歩き・旅行':'#c9762e', 'その他':'#6b7280'
 };
 const GENRE_PALETTE = Object.values(GENRE_COLOR_MAP);
 
@@ -592,7 +595,7 @@ function exportJSON(){
   const blob = new Blob([JSON.stringify(entries,null,2)],{type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'エンタメ記録.json';
+  a.download = 'かをりんのエンタメノート.json';
   a.click();
   URL.revokeObjectURL(a.href);
 }
@@ -646,7 +649,8 @@ const GENRE_RULES = [
   {genre:'音楽・コンサート', kws:['コンサート','ライブ','リサイタル','オーケストラ']},
   {genre:'落語', kws:['落語','寄席','独演会']},
   {genre:'朗読会', kws:['朗読']},
-  {genre:'美術展', kws:['展覧会','美術展','個展']}
+  {genre:'美術展', kws:['展覧会','美術展','個展']},
+  {genre:'街歩き・旅行', kws:['街歩き','旅行','ツアー','散策']}
 ];
 const ALL_ICS_KEYWORDS = GENRE_RULES.flatMap(r=>r.kws);
 
