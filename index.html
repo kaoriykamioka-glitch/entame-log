@@ -265,7 +265,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const BUILD_ID = '2026-07-12-1'; // 更新のたびにこの値を変更する（キャッシュ検知用）
+const BUILD_ID = '2026-07-12-2'; // 更新のたびにこの値を変更する（キャッシュ検知用）
 (function(){
   try{
     var already = sessionStorage.getItem('entame-log-cachecheck');
@@ -285,6 +285,26 @@ const BUILD_ID = '2026-07-12-1'; // 更新のたびにこの値を変更する�
 })();
 
 const KEY = 'entame-log-v1';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwPPjOz7iMyfgk1RtAOTvDxpp43KW5ipAIni15A3JBiBz1KgklkEeh5q4_dEA3cFwQUKQ/exec';
+const API_TOKEN = '350458bb8a044dcfacd9d0e3de131ed1';
+
+async function apiList(){
+  const res = await fetch(API_URL, {cache:'no-store'});
+  const data = await res.json();
+  if(!data.ok) throw new Error(data.error || 'API error');
+  return data.entries;
+}
+
+async function apiCall(action, payload){
+  const res = await fetch(API_URL, {
+    method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify(Object.assign({token: API_TOKEN, action}, payload))
+  });
+  const data = await res.json();
+  if(!data.ok) throw new Error(data.error || 'API error');
+  return data.entries;
+}
 const GENRE_PRESETS = ['演劇','ミュージカル','歌舞伎','文楽','能・狂言','落語','朗読会','映画','音楽・コンサート','美術展','その他'];
 
 const GENRE_COLOR_MAP = {
@@ -311,16 +331,29 @@ let expandedId = null;
 
 try{
   localStorage.setItem('__t__','1'); localStorage.removeItem('__t__');
-  const saved = localStorage.getItem(KEY);
-  entries = saved ? JSON.parse(saved) : [];
 }catch(e){
   storageOK = false;
-  entries = [];
 }
 
 function persist(){
   if(!storageOK) return;
   try{ localStorage.setItem(KEY, JSON.stringify(entries)); }catch(e){}
+}
+
+async function loadEntries(){
+  document.getElementById('count').textContent = '読み込み中…';
+  try{
+    entries = await apiList();
+    persist();
+  }catch(err){
+    try{
+      const cached = storageOK ? localStorage.getItem(KEY) : null;
+      entries = cached ? JSON.parse(cached) : [];
+    }catch(e2){ entries = []; }
+    toast('通信できないため、前回表示していたデータを表示しています');
+  }
+  renderChips();
+  render();
 }
 
 function esc(s){
@@ -513,7 +546,7 @@ function searchWebForCast(){
   window.open(`https://www.google.com/search?q=${q}`, '_blank', 'noopener');
 }
 
-function saveEntry(){
+async function saveEntry(){
   const genre = document.getElementById('inGenre').value.trim();
   const date = document.getElementById('inDate').value;
   const time = document.getElementById('inTime').value;
@@ -525,26 +558,34 @@ function saveEntry(){
   const impression = document.getElementById('inImpression').value.trim();
   if(!title){ toast('タイトルを入力してください'); return; }
 
-  if(editingId){
-    const e = entries.find(x=>x.id===editingId);
-    if(e){ Object.assign(e, {genre, date, time, title, program, place, performers, review, impression, rating: currentRating}); }
-    toast('更新しました');
-  }else{
-    entries.push({
-      id:'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
-      genre, date, time, title, program, place, performers, review, impression, rating: currentRating
-    });
-    toast('追加しました');
+  const isEdit = !!editingId;
+  const entryObj = isEdit
+    ? Object.assign({}, entries.find(x=>x.id===editingId), {genre, date, time, title, program, place, performers, review, impression, rating: currentRating})
+    : {id:'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), genre, date, time, title, program, place, performers, review, impression, rating: currentRating};
+
+  closeSheet();
+  toast('保存中…');
+  try{
+    entries = await apiCall('upsert', {entry: entryObj});
+    persist(); renderChips(); render();
+    toast(isEdit ? '更新しました' : '追加しました');
+  }catch(err){
+    toast('保存に失敗しました（通信環境をご確認ください）');
   }
-  persist(); renderChips(); render(); closeSheet();
 }
 
-function removeEntry(id){
+async function removeEntry(id){
   const e = entries.find(x=>x.id===id);
   if(!e) return;
   if(!confirm(`「${e.title}」を削除しますか？`)) return;
-  entries = entries.filter(x=>x.id!==id);
-  persist(); renderChips(); render(); toast('削除しました');
+  toast('削除中…');
+  try{
+    entries = await apiCall('delete', {id});
+    persist(); renderChips(); render();
+    toast('削除しました');
+  }catch(err){
+    toast('削除に失敗しました（通信環境をご確認ください）');
+  }
 }
 
 function exportJSON(){
@@ -560,17 +601,19 @@ function importJSON(ev){
   const file = ev.target.files[0];
   if(!file) return;
   const reader = new FileReader();
-  reader.onload = ()=>{
+  reader.onload = async ()=>{
     try{
       const data = JSON.parse(reader.result);
       if(!Array.isArray(data)) throw new Error();
-      entries = data.filter(e=>e && e.title).map(e=>({
+      const imported = data.filter(e=>e && e.title).map(e=>({
         id: e.id || 'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
         genre: String(e.genre||''), date: String(e.date||''), time: String(e.time||''),
         title: String(e.title), program: String(e.program||''), place: String(e.place||''),
         performers: String(e.performers||''), review: String(e.review||''),
         impression: String(e.impression||''), rating: +e.rating||0
       }));
+      toast('読み込み中…');
+      entries = await apiCall('bulkUpsert', {entries: imported});
       persist(); renderChips(); render(); toast('読み込みました');
     }catch(e){ toast('ファイルを読み込めませんでした'); }
   };
@@ -589,8 +632,7 @@ function toast(msg){
 
 document.getElementById('search').addEventListener('input', render);
 document.getElementById('sort').addEventListener('change', render);
-renderChips();
-render();
+loadEntries();
 
 /* ===================== カレンダー(ICS)取り込み ===================== */
 
@@ -764,24 +806,31 @@ function updateIcsImportBtn(){
   btn.disabled = icsSelected.size === 0;
 }
 
-function importSelectedIcs(){
-  let added = 0, skipped = 0;
+async function importSelectedIcs(){
+  const toAdd = [];
+  let skipped = 0;
   icsSelected.forEach(i=>{
     const e = icsEvents[i];
     if(!e) return;
     const dup = entries.some(x=>x.title===e.title && x.date===e.date);
     if(dup){ skipped++; return; }
-    entries.push({
-      id:'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
+    toAdd.push({
+      id:'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)+Math.random().toString(36).slice(2,5),
       genre: guessGenre((e.title||'')+(e.location||'')),
       date: e.date||'', time: e.time||'', title: e.title, program:'',
       place: e.location||'', performers:'', review:'', impression:'', rating:0
     });
-    added++;
   });
-  persist(); renderChips(); render();
   closeIcsSheet();
-  toast(skipped ? `${added}件を取り込みました（重複${skipped}件をスキップ）` : `${added}件を取り込みました`);
+  if(!toAdd.length){ toast('重複していたため取り込む予定はありませんでした'); return; }
+  toast('取り込み中…');
+  try{
+    entries = await apiCall('bulkUpsert', {entries: toAdd});
+    persist(); renderChips(); render();
+    toast(skipped ? `${toAdd.length}件を取り込みました（重複${skipped}件をスキップ）` : `${toAdd.length}件を取り込みました`);
+  }catch(err){
+    toast('取り込みに失敗しました（通信環境をご確認ください）');
+  }
 }
 
 document.getElementById('icsFileInput').addEventListener('change', handleIcsFile);
