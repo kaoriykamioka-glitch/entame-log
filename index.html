@@ -392,7 +392,6 @@ function render(){
 
 function renderCard(e){
   const open = expandedId === e.id;
-  const hasDetail = e.review || e.impression;
   return `
     <div class="card">
       <div class="card-top" onclick="toggleExpand('${e.id}')">
@@ -410,13 +409,12 @@ function renderCard(e){
           </div>
         </div>
       </div>
-      ${hasDetail ? `
       <div class="detail ${open?'open':''}" id="detail-${e.id}">
         <div class="detail-inner">
-          ${e.review ? `<div class="detail-block"><div class="detail-label">劇評</div><div class="detail-text">${esc(e.review)}</div></div>` : ''}
-          ${e.impression ? `<div class="detail-block"><div class="detail-label">感想</div><div class="detail-text">${esc(e.impression)}</div></div>` : ''}
+          <div class="detail-block"><div class="detail-label">劇評</div><div class="detail-text">${e.review ? esc(e.review) : '（未入力）'}</div></div>
+          <div class="detail-block"><div class="detail-label">感想</div><div class="detail-text">${e.impression ? esc(e.impression) : '（未入力）'}</div></div>
         </div>
-      </div>` : ''}
+      </div>
       <div class="actions">
         <button class="icon-btn" onclick="openSheet('${e.id}')" aria-label="編集">✎</button>
         <button class="icon-btn" onclick="removeEntry('${e.id}')" aria-label="削除">🗑</button>
