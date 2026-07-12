@@ -268,7 +268,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const BUILD_ID = '2026-07-12-3'; // 更新のたびにこの値を変更する（キャッシュ検知用）
+const BUILD_ID = '2026-07-12-6'; // 更新のたびにこの値を変更する（キャッシュ検知用）
 (function(){
   try{
     var already = sessionStorage.getItem('entame-log-cachecheck');
@@ -308,12 +308,12 @@ async function apiCall(action, payload){
   if(!data.ok) throw new Error(data.error || 'API error');
   return data.entries;
 }
-const GENRE_PRESETS = ['演劇','ミュージカル','歌舞伎','文楽','能・狂言','落語','朗読会','映画','音楽・コンサート','美術展','街歩き・旅行','その他'];
+const GENRE_PRESETS = ['演劇','宝塚・ミュージカル','歌舞伎','文楽','能・狂言','落語','朗読会','映画','音楽・ライブ','美術館・博物館','街歩き・旅行','その他'];
 
 const GENRE_COLOR_MAP = {
-  '演劇':'#31456b', 'ミュージカル':'#7d3c53', '歌舞伎':'#b3402a', '文楽':'#6b4a30',
-  '能・狂言':'#3f5d43', '落語':'#8a6d1f', '朗読会':'#5c5590', '映画':'#2b3a4a',
-  '音楽・コンサート':'#a3455a', '美術展':'#2f6b63', '街歩き・旅行':'#c9762e', 'その他':'#6b7280'
+  '演劇':'#b3402a', '宝塚・ミュージカル':'#7b4fa0', '歌舞伎':'#1e5c38', '文楽':'#6b4423',
+  '能・狂言':'#3f6b6b', '落語':'#cc7722', '朗読会':'#5fa77c', '映画':'#b8860b',
+  '音楽・ライブ':'#2f6fa5', '美術館・博物館':'#4a5a7a', '街歩き・旅行':'#2f8fa0', 'その他':'#6b7280'
 };
 const GENRE_PALETTE = Object.values(GENRE_COLOR_MAP);
 
@@ -392,7 +392,7 @@ function renderChips(){
     genres.map(g=>{
       const c = genreColor(g);
       const on = genreFilter===g;
-      const style = on ? `background:${c};border-color:${c};color:#fff` : `border-color:${c};color:${c}`;
+      const style = `background:${c};border-color:${c};color:#fff;opacity:${on?1:.55}` + (on ? `;box-shadow:0 0 0 2px rgba(0,0,0,.18)` : '');
       return `<button class="chip" style="${style}" onclick="setFilter('${esc(g)}')">${esc(g)}</button>`;
     }).join('');
 }
@@ -487,7 +487,7 @@ function renderGenrePicks(selected){
   el.innerHTML = GENRE_PRESETS.map(g=>{
     const c = genreColor(g);
     const on = g===selected;
-    const style = on ? `background:${c};border-color:${c};color:#fff` : `border-color:${c};color:${c}`;
+    const style = `background:${c};border-color:${c};color:#fff;opacity:${on?1:.55}` + (on ? `;box-shadow:0 0 0 2px rgba(0,0,0,.18)` : '');
     return `<button type="button" class="genre-pick" style="${style}" onclick="pickGenre('${esc(g)}')">${esc(g)}</button>`;
   }).join('');
 }
@@ -644,12 +644,12 @@ const GENRE_RULES = [
   {genre:'文楽', kws:['文楽']},
   {genre:'能・狂言', kws:['能楽','狂言']},
   {genre:'演劇', kws:['芝居','演劇','舞台','戯曲','公演']},
-  {genre:'ミュージカル', kws:['ミュージカル']},
+  {genre:'宝塚・ミュージカル', kws:['ミュージカル','宝塚']},
   {genre:'映画', kws:['映画','シネマ','上映']},
-  {genre:'音楽・コンサート', kws:['コンサート','ライブ','リサイタル','オーケストラ']},
+  {genre:'音楽・ライブ', kws:['コンサート','ライブ','リサイタル','オーケストラ']},
   {genre:'落語', kws:['落語','寄席','独演会']},
   {genre:'朗読会', kws:['朗読']},
-  {genre:'美術展', kws:['展覧会','美術展','個展']},
+  {genre:'美術館・博物館', kws:['展覧会','美術展','個展','美術館','博物館']},
   {genre:'街歩き・旅行', kws:['街歩き','旅行','ツアー','散策']}
 ];
 const ALL_ICS_KEYWORDS = GENRE_RULES.flatMap(r=>r.kws);

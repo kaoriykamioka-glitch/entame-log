@@ -15,16 +15,32 @@ function getSheet_(){
   if(sheet.getLastRow() === 0){
     sheet.appendRow(HEADERS);
   }
+  // 日付・時刻に見える値をスプレッドシートが勝手に日付型へ変換しないよう、
+  // 毎回（シートが既存の場合も含めて）プレーンテキスト形式を強制する
+  const dateCol = HEADERS.indexOf('date') + 1;
+  const timeCol = HEADERS.indexOf('time') + 1;
+  sheet.getRange(1, dateCol, 2000, 1).setNumberFormat('@');
+  sheet.getRange(1, timeCol, 2000, 1).setNumberFormat('@');
   return sheet;
 }
 
 function rowsToObjects_(sheet){
+  const tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
   const data = sheet.getDataRange().getValues();
   const headers = data[0];
   const rows = data.slice(1);
   return rows.filter(function(r){ return r[0]; }).map(function(r){
     const obj = {};
-    headers.forEach(function(h,i){ obj[h] = r[i]; });
+    headers.forEach(function(h,i){
+      let v = r[i];
+      // 過去に日付型へ自動変換されてしまった値を、表示用のプレーン文字列に戻す
+      if(v instanceof Date){
+        if(h === 'date'){ v = Utilities.formatDate(v, tz, 'yyyy-MM-dd'); }
+        else if(h === 'time'){ v = Utilities.formatDate(v, tz, 'HH:mm'); }
+        else if(h === 'updatedAt'){ v = v.toISOString(); }
+      }
+      obj[h] = v;
+    });
     obj.rating = Number(obj.rating) || 0;
     return obj;
   });
