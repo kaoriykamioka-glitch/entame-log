@@ -77,6 +77,7 @@
   .date-label{font-size:12px;color:var(--ink-soft);letter-spacing:.05em}
   .stars{font-size:12px;color:var(--gold);letter-spacing:.02em}
   .title{font-size:16px;font-weight:600;letter-spacing:.03em;line-height:1.5;word-break:break-word;margin-top:4px}
+  .program-line{font-size:13px;color:var(--accent);margin-top:4px;line-height:1.6;word-break:break-word}
   .meta{font-size:13px;color:var(--ink-soft);margin-top:5px;letter-spacing:.03em;line-height:1.6}
   .meta b{color:var(--spine);font-weight:600}
   .detail{
@@ -214,7 +215,8 @@
       <div class="field"><label>時刻（任意）</label><input id="inTime" type="time"></div>
     </div>
 
-    <div class="field"><label>タイトル</label><input id="inTitle" type="text" placeholder="例：ハムレット"></div>
+    <div class="field"><label>タイトル</label><input id="inTitle" type="text" placeholder="例：六月大歌舞伎"></div>
+    <div class="field"><label>演目（任意）</label><textarea id="inProgram" placeholder="例：祇園祭礼信仰記 金閣寺／戻駕色相肩／子連れ狼（複数ある場合は改行で）"></textarea></div>
     <div class="field"><label>場所</label><input id="inPlace" type="text" placeholder="例：東京芸術劇場"></div>
     <div class="field">
       <label>出演者</label>
@@ -348,7 +350,7 @@ function render(){
   let items = entries.slice();
   if(genreFilter !== 'all') items = items.filter(e=>e.genre===genreFilter);
   if(q) items = items.filter(e=>
-    (e.title+e.performers+e.place+e.genre+e.review+e.impression).toLowerCase().includes(q)
+    (e.title+(e.program||'')+e.performers+e.place+e.genre+e.review+e.impression).toLowerCase().includes(q)
   );
 
   const total = entries.length;
@@ -401,6 +403,7 @@ function renderCard(e){
             ${e.rating ? `<span class="stars">${starsStr(e.rating)}</span>` : ''}
           </div>
           <div class="title">${esc(e.title)}</div>
+          ${e.program ? `<div class="program-line">${escNl(e.program)}</div>` : ''}
           <div class="meta">
             ${e.place ? `<b>場所</b>：${esc(e.place)}<br>` : ''}
             ${e.performers ? `<b>出演</b>：${escNl(e.performers)}` : ''}
@@ -468,6 +471,7 @@ function openSheet(id){
   document.getElementById('inDate').value = e ? (e.date||'') : new Date().toISOString().slice(0,10);
   document.getElementById('inTime').value = e ? (e.time||'') : '';
   document.getElementById('inTitle').value = e ? e.title : '';
+  document.getElementById('inProgram').value = e ? (e.program||'') : '';
   document.getElementById('inPlace').value = e ? (e.place||'') : '';
   document.getElementById('inPerformers').value = e ? (e.performers||'') : '';
   document.getElementById('inReview').value = e ? (e.review||'') : '';
@@ -485,9 +489,10 @@ function closeSheet(){
 
 function searchWebForCast(){
   const title = document.getElementById('inTitle').value.trim();
+  const program = document.getElementById('inProgram').value.trim().replace(/\n/g,' ');
   const place = document.getElementById('inPlace').value.trim();
   if(!title){ toast('タイトルを入力してから検索してください'); return; }
-  const q = encodeURIComponent(`${title} ${place} 配役 出演`.trim());
+  const q = encodeURIComponent(`${title} ${program} ${place} 配役 出演`.trim());
   window.open(`https://www.google.com/search?q=${q}`, '_blank', 'noopener');
 }
 
@@ -496,6 +501,7 @@ function saveEntry(){
   const date = document.getElementById('inDate').value;
   const time = document.getElementById('inTime').value;
   const title = document.getElementById('inTitle').value.trim();
+  const program = document.getElementById('inProgram').value.trim();
   const place = document.getElementById('inPlace').value.trim();
   const performers = document.getElementById('inPerformers').value.trim();
   const review = document.getElementById('inReview').value.trim();
@@ -504,12 +510,12 @@ function saveEntry(){
 
   if(editingId){
     const e = entries.find(x=>x.id===editingId);
-    if(e){ Object.assign(e, {genre, date, time, title, place, performers, review, impression, rating: currentRating}); }
+    if(e){ Object.assign(e, {genre, date, time, title, program, place, performers, review, impression, rating: currentRating}); }
     toast('更新しました');
   }else{
     entries.push({
       id:'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
-      genre, date, time, title, place, performers, review, impression, rating: currentRating
+      genre, date, time, title, program, place, performers, review, impression, rating: currentRating
     });
     toast('追加しました');
   }
@@ -544,7 +550,7 @@ function importJSON(ev){
       entries = data.filter(e=>e && e.title).map(e=>({
         id: e.id || 'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
         genre: String(e.genre||''), date: String(e.date||''), time: String(e.time||''),
-        title: String(e.title), place: String(e.place||''),
+        title: String(e.title), program: String(e.program||''), place: String(e.place||''),
         performers: String(e.performers||''), review: String(e.review||''),
         impression: String(e.impression||''), rating: +e.rating||0
       }));
@@ -751,7 +757,7 @@ function importSelectedIcs(){
     entries.push({
       id:'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
       genre: guessGenre((e.title||'')+(e.location||'')),
-      date: e.date||'', time: e.time||'', title: e.title,
+      date: e.date||'', time: e.time||'', title: e.title, program:'',
       place: e.location||'', performers:'', review:'', impression:'', rating:0
     });
     added++;
