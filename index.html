@@ -265,6 +265,25 @@
 <div class="toast" id="toast"></div>
 
 <script>
+const BUILD_ID = '2026-07-12-1'; // 更新のたびにこの値を変更する（キャッシュ検知用）
+(function(){
+  try{
+    var already = sessionStorage.getItem('entame-log-cachecheck');
+    fetch(location.pathname, {cache:'no-store'})
+      .then(function(r){ return r.text(); })
+      .then(function(html){
+        var m = html.match(/BUILD_ID\s*=\s*'([^']+)'/);
+        if(m && m[1] !== BUILD_ID && already !== m[1]){
+          sessionStorage.setItem('entame-log-cachecheck', m[1]);
+          var url = new URL(location.href);
+          url.searchParams.set('v', Date.now());
+          location.replace(url.toString());
+        }
+      })
+      .catch(function(){});
+  }catch(e){}
+})();
+
 const KEY = 'entame-log-v1';
 const GENRE_PRESETS = ['演劇','ミュージカル','歌舞伎','文楽','能・狂言','落語','朗読会','映画','音楽・コンサート','美術展','その他'];
 
