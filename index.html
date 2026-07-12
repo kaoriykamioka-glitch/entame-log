@@ -271,7 +271,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const BUILD_ID = '2026-07-12-8'; // 更新のたびにこの値を変更する（キャッシュ検知用）
+const BUILD_ID = '2026-07-12-9'; // 更新のたびにこの値を変更する（キャッシュ検知用）
 (function(){
   try{
     var already = sessionStorage.getItem('entame-log-cachecheck');
@@ -320,8 +320,20 @@ const GENRE_COLOR_MAP = {
 };
 const GENRE_PALETTE = Object.values(GENRE_COLOR_MAP);
 
-function genreColor(g){
+// 過去の名称のまま保存されているデータも新しい名称として扱うためのエイリアス
+const GENRE_ALIASES = {
+  'ミュージカル':'宝塚・ミュージカル',
+  '音楽・コンサート':'音楽・ライブ',
+  '美術展':'美術館・博物館'
+};
+
+function resolveGenre(g){
   g = (g||'').trim() || 'その他';
+  return GENRE_ALIASES[g] || g;
+}
+
+function genreColor(g){
+  g = resolveGenre(g);
   if(GENRE_COLOR_MAP[g]) return GENRE_COLOR_MAP[g];
   let h = 0;
   for(let i=0;i<g.length;i++){ h = (h*31 + g.charCodeAt(i)) >>> 0; }
@@ -397,7 +409,7 @@ function starsStr(n){
 }
 
 function renderChips(){
-  const genres = [...new Set(entries.map(e=>e.genre).filter(Boolean))];
+  const genres = [...new Set(entries.map(e=>resolveGenre(e.genre)).filter(Boolean))];
   const el = document.getElementById('chips');
   el.innerHTML =
     `<button class="chip ${genreFilter==='all'?'on':''}" onclick="setFilter('all')">すべて</button>` +
@@ -415,7 +427,7 @@ function render(){
   const q = document.getElementById('search').value.trim().toLowerCase();
   const order = document.getElementById('sort').value;
   let items = entries.slice();
-  if(genreFilter !== 'all') items = items.filter(e=>e.genre===genreFilter);
+  if(genreFilter !== 'all') items = items.filter(e=>resolveGenre(e.genre)===genreFilter);
   if(q) items = items.filter(e=>
     (e.title+(e.program||'')+e.performers+e.place+e.genre+e.review+e.impression).toLowerCase().includes(q)
   );
@@ -462,7 +474,7 @@ function renderCard(e){
   return `
     <div class="card">
       <div class="card-top" onclick="toggleExpand('${e.id}')">
-        <div class="spine" style="background:${genreColor(e.genre)}">${esc(e.genre||'その他').slice(0,6)}</div>
+        <div class="spine" style="background:${genreColor(e.genre)}">${esc(resolveGenre(e.genre)).slice(0,6)}</div>
         <div class="body">
           <div class="row1">
             <span class="date-label">${fmtDate(e.date)}${e.time ? ' '+esc(e.time) : ''}</span>
