@@ -395,9 +395,9 @@ function renderCard(e){
   const hasDetail = e.review || e.impression;
   return `
     <div class="card">
-      <div class="card-top">
+      <div class="card-top" onclick="toggleExpand('${e.id}')">
         <div class="spine" style="background:${genreColor(e.genre)}">${esc(e.genre||'その他').slice(0,6)}</div>
-        <div class="body" onclick="toggleExpand('${e.id}')">
+        <div class="body">
           <div class="row1">
             <span class="date-label">${fmtDate(e.date)}${e.time ? ' '+esc(e.time) : ''}</span>
             ${e.rating ? `<span class="stars">${starsStr(e.rating)}</span>` : ''}
