@@ -271,7 +271,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const BUILD_ID = '2026-07-12-9'; // 更新のたびにこの値を変更する（キャッシュ検知用）
+const BUILD_ID = '2026-07-12-10'; // 更新のたびにこの値を変更する（キャッシュ検知用）
 (function(){
   try{
     var already = sessionStorage.getItem('entame-log-cachecheck');
@@ -771,13 +771,17 @@ function handleIcsFile(ev){
   const reader = new FileReader();
   reader.onload = ()=>{
     try{
-      icsEvents = parseICS(reader.result);
+      const parsed = parseICS(reader.result);
+      const beforeCount = parsed.length;
+      icsEvents = parsed.filter(e => !entries.some(x=>x.title===e.title && x.date===e.date));
+      const alreadyImported = beforeCount - icsEvents.length;
       icsSelected = new Set();
       icsEvents.forEach((e,i)=>{
         if(matchesIcsKeyword((e.title||'')+(e.location||''))) icsSelected.add(i);
       });
-      document.getElementById('icsFileName').textContent =
-        icsEvents.length ? `${file.name}（${icsEvents.length}件の予定を読み込みました）` : `${file.name}（予定が見つかりませんでした）`;
+      document.getElementById('icsFileName').textContent = icsEvents.length
+        ? `${file.name}（新規${icsEvents.length}件${alreadyImported ? '／取込済み'+alreadyImported+'件を除外' : ''}）`
+        : (alreadyImported ? `${file.name}（すべて取込済みでした）` : `${file.name}（予定が見つかりませんでした）`);
       renderIcsList();
     }catch(err){
       toast('ICSファイルを読み込めませんでした');
