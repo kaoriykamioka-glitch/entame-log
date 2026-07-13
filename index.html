@@ -256,6 +256,10 @@
       <input type="file" id="icsFileInput" accept=".ics,text/calendar" style="display:none">
       <div class="help-text" id="icsFileName">Googleカレンダーの設定 →「カレンダーの統合」にある該当カレンダーの「エクスポート」から書き出したicsファイルを選んでください。</div>
     </div>
+    <div class="field">
+      <label>この日付以降の予定だけ表示（任意）</label>
+      <input type="date" id="icsSinceDate" onchange="renderIcsList()">
+    </div>
     <div class="ics-toolbar">
       <label><input type="checkbox" id="chkIcsShowAll" onchange="toggleIcsShowAll()"> すべての予定を表示</label>
       <span>芝居・映画などのキーワードで自動絞り込み中</span>
@@ -271,7 +275,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const BUILD_ID = '2026-07-12-10'; // 更新のたびにこの値を変更する（キャッシュ検知用）
+const BUILD_ID = '2026-07-14-1'; // 更新のたびにこの値を変更する（キャッシュ検知用）
 (function(){
   try{
     var already = sessionStorage.getItem('entame-log-cachecheck');
@@ -755,6 +759,8 @@ function openIcsSheet(){
   icsEvents = [];
   icsSelected = new Set();
   document.getElementById('chkIcsShowAll').checked = false;
+  const dates = entries.map(e=>e.date).filter(Boolean).sort();
+  document.getElementById('icsSinceDate').value = dates.length ? dates[dates.length-1] : '';
   document.getElementById('icsFileName').textContent =
     'Googleカレンダーの設定 →「カレンダーの統合」にある該当カレンダーの「エクスポート」から書き出したicsファイルを選んでください。';
   renderIcsList();
@@ -798,9 +804,11 @@ function toggleIcsShowAll(){
 function renderIcsList(){
   const list = document.getElementById('icsList');
   const showAll = document.getElementById('chkIcsShowAll').checked;
+  const sinceDate = document.getElementById('icsSinceDate').value;
   const indices = icsEvents.map((e,i)=>i).filter(i=>{
-    if(showAll) return true;
     const e = icsEvents[i];
+    if(sinceDate && e.date && e.date < sinceDate) return false;
+    if(showAll) return true;
     return matchesIcsKeyword((e.title||'')+(e.location||'')) || icsSelected.has(i);
   });
   indices.sort((a,b)=> (icsEvents[a].date||'').localeCompare(icsEvents[b].date||''));
@@ -808,7 +816,7 @@ function renderIcsList(){
   if(!icsEvents.length){
     list.innerHTML = `<div class="ics-empty">ICSファイルを選択してください</div>`;
   }else if(!indices.length){
-    list.innerHTML = `<div class="ics-empty">キーワードに一致する予定がありません。「すべての予定を表示」をお試しください</div>`;
+    list.innerHTML = `<div class="ics-empty">条件に一致する予定がありません。日付や「すべての予定を表示」をお試しください</div>`;
   }else{
     list.innerHTML = indices.map(i=>{
       const e = icsEvents[i];
