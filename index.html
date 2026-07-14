@@ -84,6 +84,16 @@
   .program-line a{color:var(--accent);word-break:break-all}
   .meta{font-size:13px;color:var(--ink-soft);margin-top:5px;letter-spacing:.03em;line-height:1.6}
   .meta a{color:var(--spine);word-break:break-all}
+  .cast-label{margin-top:5px}
+  .cast-grid{
+    display:grid;grid-template-columns:auto 1fr;column-gap:12px;row-gap:2px;
+    margin-top:3px;font-size:13px;
+  }
+  .cast-role{color:var(--ink-soft);white-space:nowrap}
+  .cast-group{color:var(--accent);font-weight:600;margin-top:8px;margin-bottom:1px}
+  .cast-group:first-of-type{margin-top:3px}
+  .cast-name{color:var(--ink)}
+  .cast-name a{color:var(--spine);word-break:break-all}
   .meta b{color:var(--spine);font-weight:600}
   .detail{
     max-height:0;overflow:hidden;transition:max-height .25s ease;
@@ -225,9 +235,13 @@
     <div class="field"><label>演目（任意）</label><textarea id="inProgram" placeholder="例：祇園祭礼信仰記 金閣寺／戻駕色相肩／子連れ狼（複数ある場合は改行で）"></textarea></div>
     <div class="field"><label>場所</label><input id="inPlace" type="text" placeholder="例：東京芸術劇場"></div>
     <div class="field">
-      <label>出演者</label>
-      <textarea id="inPerformers" placeholder="例：〇〇、△△（カンマ区切りや改行区切りで）"></textarea>
-      <button type="button" class="link-btn" style="padding-left:0" onclick="searchWebForCast()">🔍 Webで配役を調べる</button>
+      <label>出演者（「役名：演者名」を改行区切りで。演目名の行を挟むとその演目の見出しになります）</label>
+      <textarea id="inPerformers" placeholder="例：&#10;金閣寺&#10;雪姫：中村時蔵&#10;此下東吉：中村隼人&#10;戻駕色相肩&#10;吾妻の与四郎：中村萬壽"></textarea>
+      <div style="display:flex;gap:14px;margin-top:2px">
+        <button type="button" class="link-btn" style="padding-left:0" onclick="formatPerformersPaste()">🧹 貼り付けを整形</button>
+        <button type="button" class="link-btn" style="padding-left:0" onclick="swapPerformersPairs()">🔁 役名⇄演者名を入れ替え</button>
+        <button type="button" class="link-btn" style="padding-left:0" onclick="searchWebForCast()">🔍 Webで配役を調べる</button>
+      </div>
     </div>
 
     <div class="field">
@@ -275,7 +289,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const BUILD_ID = '2026-07-14-2'; // 更新のたびにこの値を変更する（キャッシュ検知用）
+const BUILD_ID = '2026-07-14-6'; // 更新のたびにこの値を変更する（キャッシュ検知用）
 (function(){
   try{
     var already = sessionStorage.getItem('entame-log-cachecheck');
@@ -401,6 +415,12 @@ function fmtDate(d){
   return `${y}年${+m}月${+day}日`;
 }
 
+function fmtDateSlash(d){
+  if(!d) return '';
+  const [y,m,day] = d.split('-');
+  return `${y}/${+m}/${+day}`;
+}
+
 function fmtDateShort(d){
   if(!d) return '日付不明';
   const [y,m,day] = d.split('-');
@@ -433,7 +453,7 @@ function render(){
   let items = entries.slice();
   if(genreFilter !== 'all') items = items.filter(e=>resolveGenre(e.genre)===genreFilter);
   if(q) items = items.filter(e=>
-    (e.title+(e.program||'')+e.performers+e.place+e.genre+e.review+e.impression+(e.date||'')+(e.date?fmtDate(e.date):'')).toLowerCase().includes(q)
+    (e.title+(e.program||'')+e.performers+e.place+e.genre+e.review+e.impression+(e.date||'')+(e.date?fmtDate(e.date):'')+(e.date?fmtDateSlash(e.date):'')+(e.date?e.date.replace(/-/g,'/'):'')).toLowerCase().includes(q)
   );
 
   const total = entries.length;
@@ -475,10 +495,13 @@ function render(){
 
 function renderCard(e){
   const open = expandedId === e.id;
+  const genreLabel = resolveGenre(e.genre);
+  const spineFontSize = genreLabel.length > 7 ? '10.5px' : (genreLabel.length > 4 ? '12px' : '14px');
+  const spineLetterSpacing = genreLabel.length > 4 ? '.05em' : '.15em';
   return `
     <div class="card">
       <div class="card-top" onclick="toggleExpand('${e.id}')">
-        <div class="spine" style="background:${genreColor(e.genre)}">${esc(resolveGenre(e.genre)).slice(0,6)}</div>
+        <div class="spine" style="background:${genreColor(e.genre)};font-size:${spineFontSize};letter-spacing:${spineLetterSpacing}">${esc(genreLabel)}</div>
         <div class="body">
           <div class="row1">
             <span class="date-label">${fmtDate(e.date)}${e.time ? ' '+esc(e.time) : ''}</span>
@@ -488,7 +511,7 @@ function renderCard(e){
           ${e.program ? `<div class="program-line">${linkify(e.program)}</div>` : ''}
           <div class="meta">
             ${e.place ? `<b>場所</b>：${esc(e.place)}<br>` : ''}
-            ${e.performers ? `<b>出演</b>：${linkify(e.performers)}` : ''}
+            ${e.performers ? renderPerformersBlock(e.performers) : ''}
           </div>
         </div>
       </div>
@@ -575,6 +598,65 @@ function searchWebForCast(){
   if(!title){ toast('タイトルを入力してから検索してください'); return; }
   const q = encodeURIComponent(`${title} ${program} ${place} 配役 出演`.trim());
   window.open(`https://www.google.com/search?q=${q}`, '_blank', 'noopener');
+}
+
+function formatPerformersPaste(){
+  const ta = document.getElementById('inPerformers');
+  const lines = ta.value.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  if(!lines.length){ toast('出演者欄にテキストを貼り付けてから押してください'); return; }
+
+  const hasDelim = lines.every(l=>/[：:]|\t/.test(l));
+  let pairs;
+  if(hasDelim){
+    pairs = lines.map(l=>{
+      const parts = l.split(/[：:]|\t/);
+      return [parts[0].trim(), parts.slice(1).join('：').trim()];
+    });
+  }else if(lines.length % 2 === 0){
+    const half = lines.length / 2;
+    pairs = [];
+    for(let i=0;i<half;i++){ pairs.push([lines[i], lines[half+i]]); }
+  }else{
+    toast('自動整形できませんでした（区切り文字がなく行数も奇数です）');
+    return;
+  }
+  ta.value = pairs.map(p=>`${p[0]}：${p[1]}`).join('\n');
+  toast('整形しました。順番が逆なら「入れ替え」を押してください');
+}
+
+function swapPerformersPairs(){
+  const ta = document.getElementById('inPerformers');
+  const lines = ta.value.split(/\r?\n/).filter(Boolean);
+  if(!lines.length) return;
+  ta.value = lines.map(l=>{
+    const idx = l.includes('：') ? l.indexOf('：') : l.indexOf(':');
+    if(idx === -1) return l;
+    return l.slice(idx+1).trim() + '：' + l.slice(0,idx).trim();
+  }).join('\n');
+}
+
+function renderPerformersBlock(text){
+  const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  const hasAnyPair = lines.some(l=>l.includes('：')||l.includes(':'));
+  if(!lines.length || !hasAnyPair){
+    return `<b>出演</b>：${linkify(text)}`;
+  }
+  let html = `<div class="cast-label"><b>出演</b></div>`;
+  let gridOpen = false;
+  lines.forEach(l=>{
+    const idx = l.includes('：') ? l.indexOf('：') : l.indexOf(':');
+    if(idx === -1){
+      if(gridOpen){ html += `</div>`; gridOpen = false; }
+      html += `<div class="cast-group">${esc(l)}</div>`;
+    }else{
+      if(!gridOpen){ html += `<div class="cast-grid">`; gridOpen = true; }
+      const role = l.slice(0,idx).trim();
+      const name = l.slice(idx+1).trim();
+      html += `<div class="cast-role">${esc(role)}</div><div class="cast-name">${linkify(name)}</div>`;
+    }
+  });
+  if(gridOpen) html += `</div>`;
+  return html;
 }
 
 async function saveEntry(){
