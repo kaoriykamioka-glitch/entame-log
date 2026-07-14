@@ -275,7 +275,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const BUILD_ID = '2026-07-14-1'; // 更新のたびにこの値を変更する（キャッシュ検知用）
+const BUILD_ID = '2026-07-14-2'; // 更新のたびにこの値を変更する（キャッシュ検知用）
 (function(){
   try{
     var already = sessionStorage.getItem('entame-log-cachecheck');
@@ -433,7 +433,7 @@ function render(){
   let items = entries.slice();
   if(genreFilter !== 'all') items = items.filter(e=>resolveGenre(e.genre)===genreFilter);
   if(q) items = items.filter(e=>
-    (e.title+(e.program||'')+e.performers+e.place+e.genre+e.review+e.impression).toLowerCase().includes(q)
+    (e.title+(e.program||'')+e.performers+e.place+e.genre+e.review+e.impression+(e.date||'')+(e.date?fmtDate(e.date):'')).toLowerCase().includes(q)
   );
 
   const total = entries.length;
