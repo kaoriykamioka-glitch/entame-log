@@ -323,7 +323,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const BUILD_ID = '2026-07-17-7'; // 更新のたびにこの値を変更する（キャッシュ検知用）
+const BUILD_ID = '2026-07-17-9'; // 更新のたびにこの値を変更する（キャッシュ検知用）
 (function(){
   try{
     var already = sessionStorage.getItem('entame-log-cachecheck');
@@ -363,12 +363,13 @@ async function apiCall(action, payload){
   if(!data.ok) throw new Error(data.error || 'API error');
   return data.entries;
 }
-const GENRE_PRESETS = ['演劇','宝塚・ミュージカル','歌舞伎','文楽','能・狂言','落語','朗読会','映画','音楽・ライブ','美術館・博物館','街歩き・旅行','その他'];
+const GENRE_PRESETS = ['演劇','宝塚・ミュージカル','歌舞伎','文楽','能・狂言','落語','朗読会','映画','音楽・ライブ','美術館・博物館','街歩き・旅行','相撲','その他'];
 
 const GENRE_COLOR_MAP = {
   '演劇':'#b3402a', '宝塚・ミュージカル':'#7b4fa0', '歌舞伎':'#1e5c38', '文楽':'#6b4423',
   '能・狂言':'#3f6b6b', '落語':'#cc7722', '朗読会':'#5fa77c', '映画':'#b8860b',
-  '音楽・ライブ':'#2f6fa5', '美術館・博物館':'#4a5a7a', '街歩き・旅行':'#2f8fa0', 'その他':'#6b7280'
+  '音楽・ライブ':'#2f6fa5', '美術館・博物館':'#4a5a7a', '街歩き・旅行':'#2f8fa0',
+  '相撲':'#d1495b', 'その他':'#6b7280'
 };
 const GENRE_PALETTE = Object.values(GENRE_COLOR_MAP);
 
@@ -929,7 +930,8 @@ const GENRE_RULES = [
   {genre:'落語', kws:['落語','寄席','独演会']},
   {genre:'朗読会', kws:['朗読']},
   {genre:'美術館・博物館', kws:['展覧会','美術展','個展','美術館','博物館']},
-  {genre:'街歩き・旅行', kws:['街歩き','旅行','ツアー','散策']}
+  {genre:'街歩き・旅行', kws:['街歩き','旅行','ツアー','散策']},
+  {genre:'相撲', kws:['相撲','大相撲','十両','幕内','千秋楽','場所']}
 ];
 const ALL_ICS_KEYWORDS = GENRE_RULES.flatMap(r=>r.kws);
 
