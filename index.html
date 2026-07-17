@@ -323,7 +323,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const BUILD_ID = '2026-07-17-4'; // 更新のたびにこの値を変更する（キャッシュ検知用）
+const BUILD_ID = '2026-07-17-5'; // 更新のたびにこの値を変更する（キャッシュ検知用）
 (function(){
   try{
     var already = sessionStorage.getItem('entame-log-cachecheck');
@@ -509,6 +509,7 @@ function getFilteredItems(){
 
 function render(){
   const order = document.getElementById('sort').value;
+  const q = document.getElementById('search').value.trim();
   let items = getFilteredItems();
 
   const total = entries.length;
