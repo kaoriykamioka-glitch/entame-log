@@ -299,7 +299,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const BUILD_ID = '2026-07-17-1'; // 更新のたびにこの値を変更する（キャッシュ検知用）
+const BUILD_ID = '2026-07-17-2'; // 更新のたびにこの値を変更する（キャッシュ検知用）
 (function(){
   try{
     var already = sessionStorage.getItem('entame-log-cachecheck');
@@ -386,6 +386,8 @@ function persist(){
   try{ localStorage.setItem(KEY, JSON.stringify(entries)); }catch(e){}
 }
 
+let initialScrollDone = false;
+
 async function loadEntries(){
   document.getElementById('count').textContent = '読み込み中…';
   try{
@@ -400,6 +402,18 @@ async function loadEntries(){
   }
   renderChips();
   render();
+  if(!initialScrollDone){
+    initialScrollDone = true;
+    setTimeout(scrollToToday, 0);
+  }
+}
+
+function scrollToToday(){
+  const todayStr = new Date().toISOString().slice(0,10);
+  const cards = Array.from(document.querySelectorAll('.card[data-date]'));
+  if(!cards.length) return;
+  let target = cards.find(c => c.dataset.date && c.dataset.date <= todayStr) || cards[cards.length-1];
+  target.scrollIntoView({block:'center'});
 }
 
 function esc(s){
@@ -509,7 +523,7 @@ function renderCard(e){
   const spineFontSize = genreLabel.length > 7 ? '10.5px' : (genreLabel.length > 4 ? '12px' : '14px');
   const spineLetterSpacing = genreLabel.length > 4 ? '.05em' : '.15em';
   return `
-    <div class="card">
+    <div class="card" data-date="${esc(e.date||'')}">
       <div class="card-top" onclick="toggleExpand('${e.id}')">
         <div class="spine" style="background:${genreColor(e.genre)};font-size:${spineFontSize};letter-spacing:${spineLetterSpacing}">${esc(genreLabel)}</div>
         <div class="body">
