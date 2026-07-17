@@ -110,11 +110,14 @@ function bulkDeleteEntries_(sheet, ids){
   const idSet = {};
   ids.forEach(function(id){ idSet[id] = true; });
   const data = sheet.getDataRange().getValues();
-  const idCol = data[0].indexOf('id');
-  // 行削除でインデックスがずれないよう、下から上に向かって削除する
-  for(let i=data.length-1;i>=1;i--){
-    if(idSet[data[i][idCol]]){
-      sheet.deleteRow(i+1);
-    }
+  const headers = data[0];
+  const idCol = headers.indexOf('id');
+  const remaining = data.slice(1).filter(function(row){ return !idSet[row[idCol]]; });
+  // 1行ずつdeleteRowするとID数が多いとき遅くタイムアウトしやすいため、
+  // 残す行をまとめて書き直す方式にする
+  sheet.clearContents();
+  sheet.getRange(1,1,1,headers.length).setValues([headers]);
+  if(remaining.length){
+    sheet.getRange(2,1,remaining.length,headers.length).setValues(remaining);
   }
 }

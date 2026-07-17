@@ -216,6 +216,7 @@
     </select>
   </div>
   <div class="chips" id="chips"></div>
+  <button class="link-btn" id="selectAllFilteredBtn" style="display:none;padding-left:0;margin-top:4px" onclick="selectAllFiltered()">🔲 表示中をすべて選択</button>
 </header>
 
 <main><div id="list"></div></main>
@@ -322,7 +323,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const BUILD_ID = '2026-07-17-3'; // 更新のたびにこの値を変更する（キャッシュ検知用）
+const BUILD_ID = '2026-07-17-4'; // 更新のたびにこの値を変更する（キャッシュ検知用）
 (function(){
   try{
     var already = sessionStorage.getItem('entame-log-cachecheck');
@@ -496,14 +497,19 @@ function renderChips(){
 
 function setFilter(g){ genreFilter = g; renderChips(); render(); }
 
-function render(){
+function getFilteredItems(){
   const q = document.getElementById('search').value.trim().toLowerCase();
-  const order = document.getElementById('sort').value;
   let items = entries.slice();
   if(genreFilter !== 'all') items = items.filter(e=>resolveGenre(e.genre)===genreFilter);
   if(q) items = items.filter(e=>
     (e.title+(e.program||'')+e.performers+e.place+e.genre+e.review+e.impression+(e.date||'')+(e.date?fmtDate(e.date):'')+(e.date?fmtDateSlash(e.date):'')+(e.date?e.date.replace(/-/g,'/'):'')).toLowerCase().includes(q)
   );
+  return items;
+}
+
+function render(){
+  const order = document.getElementById('sort').value;
+  let items = getFilteredItems();
 
   const total = entries.length;
   const shown = items.length;
@@ -587,6 +593,14 @@ function toggleSelectMode(){
   document.getElementById('selectModeBtn').textContent = selectMode ? '選択モードを終了' : '☑ まとめて削除';
   document.getElementById('bulkBar').classList.toggle('show', selectMode);
   document.getElementById('fabBtn').classList.toggle('hide', selectMode);
+  document.getElementById('selectAllFilteredBtn').style.display = selectMode ? '' : 'none';
+  updateBulkBar();
+  render();
+}
+
+function selectAllFiltered(){
+  const items = getFilteredItems();
+  items.forEach(e=>selectedForDelete.add(e.id));
   updateBulkBar();
   render();
 }
