@@ -323,7 +323,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const BUILD_ID = '2026-07-17-5'; // 更新のたびにこの値を変更する（キャッシュ検知用）
+const BUILD_ID = '2026-07-17-6'; // 更新のたびにこの値を変更する（キャッシュ検知用）
 (function(){
   try{
     var already = sessionStorage.getItem('entame-log-cachecheck');
@@ -952,11 +952,15 @@ function parseICS(text){
   const lines = unfoldICS(text);
   const events = [];
   let cur = null;
+  let inSubBlock = false; // VALARM・VTIMEZONEなどVEVENT内の入れ子ブロック（それぞれ独自のSUMMARY等を持つことがある）
   for(const raw of lines){
     const line = raw.trim();
-    if(line === 'BEGIN:VEVENT'){ cur = {}; continue; }
-    if(line === 'END:VEVENT'){ if(cur) events.push(cur); cur = null; continue; }
+    if(line === 'BEGIN:VEVENT'){ cur = {}; inSubBlock = false; continue; }
+    if(line === 'END:VEVENT'){ if(cur) events.push(cur); cur = null; inSubBlock = false; continue; }
     if(!cur) continue;
+    if(line.startsWith('BEGIN:')){ inSubBlock = true; continue; }
+    if(line.startsWith('END:')){ inSubBlock = false; continue; }
+    if(inSubBlock) continue; // VALARMのSUMMARY（メール件名の定型文など）で本来のタイトルを上書きしないようにする
     const colonIdx = line.indexOf(':');
     if(colonIdx === -1) continue;
     const left = line.slice(0, colonIdx);
