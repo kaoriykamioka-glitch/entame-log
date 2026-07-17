@@ -323,7 +323,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const BUILD_ID = '2026-07-17-6'; // 更新のたびにこの値を変更する（キャッシュ検知用）
+const BUILD_ID = '2026-07-17-7'; // 更新のたびにこの値を変更する（キャッシュ検知用）
 (function(){
   try{
     var already = sessionStorage.getItem('entame-log-cachecheck');
@@ -634,7 +634,20 @@ async function bulkDeleteSelected(){
     renderChips(); render();
     toast(`${n}件削除しました`);
   }catch(err){
-    toast('削除に失敗しました（通信環境をご確認ください）');
+    toast('応答を確認できませんでした。最新の状態を確認しています…');
+    try{
+      entries = await apiList();
+      persist();
+      selectMode = false;
+      selectedForDelete = new Set();
+      document.getElementById('selectModeBtn').textContent = '☑ まとめて削除';
+      document.getElementById('bulkBar').classList.remove('show');
+      document.getElementById('fabBtn').classList.remove('hide');
+      renderChips(); render();
+      toast('最新の状態を反映しました');
+    }catch(err2){
+      toast('削除に失敗しました（通信環境をご確認ください）');
+    }
   }
 }
 
@@ -799,7 +812,16 @@ async function saveEntry(){
     persist(); renderChips(); render();
     toast(isEdit ? '更新しました' : '追加しました');
   }catch(err){
-    toast('保存に失敗しました（通信環境をご確認ください）');
+    toast('応答を確認できませんでした。最新の状態を確認しています…');
+    try{
+      const latest = await apiList();
+      entries = latest;
+      persist(); renderChips(); render();
+      const saved = entries.some(x=>x.id===entryObj.id && x.title===entryObj.title);
+      toast(saved ? '保存できていました' : '保存に失敗しました（通信環境をご確認ください）');
+    }catch(err2){
+      toast('保存に失敗しました（通信環境をご確認ください）');
+    }
   }
 }
 
@@ -837,7 +859,14 @@ async function removeEntry(id){
     persist(); renderChips(); render();
     toast('削除しました');
   }catch(err){
-    toast('削除に失敗しました（通信環境をご確認ください）');
+    toast('応答を確認できませんでした。最新の状態を確認しています…');
+    try{
+      entries = await apiList();
+      persist(); renderChips(); render();
+      toast(entries.some(x=>x.id===id) ? '削除に失敗しました（通信環境をご確認ください）' : '削除できていました');
+    }catch(err2){
+      toast('削除に失敗しました（通信環境をご確認ください）');
+    }
   }
 }
 
