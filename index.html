@@ -299,7 +299,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const BUILD_ID = '2026-07-14-7'; // 更新のたびにこの値を変更する（キャッシュ検知用）
+const BUILD_ID = '2026-07-17-1'; // 更新のたびにこの値を変更する（キャッシュ検知用）
 (function(){
   try{
     var already = sessionStorage.getItem('entame-log-cachecheck');
@@ -578,9 +578,14 @@ document.getElementById('inGenre').addEventListener('input', ()=>{
 });
 
 function openSheet(id){
+  const e = id ? entries.find(x=>x.id===id) : null;
+  if(id && !e){
+    toast('最新の状態を読み込み直してください（一覧を再読み込みします）');
+    loadEntries();
+    return;
+  }
   editingId = id || null;
   document.getElementById('sheetTitle').textContent = id ? '記録を編集' : '記録を追加';
-  const e = id ? entries.find(x=>x.id===id) : null;
   document.getElementById('inGenre').value = e ? (e.genre||'') : '';
   document.getElementById('inDate').value = e ? (e.date||'') : new Date().toISOString().slice(0,10);
   document.getElementById('inTime').value = e ? (e.time||'') : '';
@@ -682,9 +687,10 @@ async function saveEntry(){
   if(!title){ toast('タイトルを入力してください'); return; }
 
   const isEdit = !!editingId;
-  const entryObj = isEdit
-    ? Object.assign({}, entries.find(x=>x.id===editingId), {genre, date, time, title, program, place, performers, review, impression, rating: currentRating})
-    : {id:'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), genre, date, time, title, program, place, performers, review, impression, rating: currentRating};
+  const entryObj = {
+    id: isEdit ? editingId : ('e'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)),
+    genre, date, time, title, program, place, performers, review, impression, rating: currentRating
+  };
 
   closeSheet();
   toast('保存中…');
