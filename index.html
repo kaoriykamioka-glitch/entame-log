@@ -286,10 +286,20 @@
   </div>
 </div>
 
+<div class="overlay" id="confirmOverlay">
+  <div class="sheet">
+    <h2 id="confirmMessage"></h2>
+    <div class="sheet-btns">
+      <button class="btn ghost" id="confirmCancelBtn">キャンセル</button>
+      <button class="btn primary" id="confirmOkBtn">削除する</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
-const BUILD_ID = '2026-07-14-6'; // 更新のたびにこの値を変更する（キャッシュ検知用）
+const BUILD_ID = '2026-07-14-7'; // 更新のたびにこの値を変更する（キャッシュ検知用）
 (function(){
   try{
     var already = sessionStorage.getItem('entame-log-cachecheck');
@@ -687,10 +697,34 @@ async function saveEntry(){
   }
 }
 
+function confirmDialog(message){
+  return new Promise(resolve=>{
+    document.getElementById('confirmMessage').textContent = message;
+    const overlay = document.getElementById('confirmOverlay');
+    const okBtn = document.getElementById('confirmOkBtn');
+    const cancelBtn = document.getElementById('confirmCancelBtn');
+    overlay.classList.add('show');
+    function cleanup(result){
+      overlay.classList.remove('show');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      overlay.removeEventListener('click', onOverlay);
+      resolve(result);
+    }
+    function onOk(){ cleanup(true); }
+    function onCancel(){ cleanup(false); }
+    function onOverlay(ev){ if(ev.target === overlay) cleanup(false); }
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    overlay.addEventListener('click', onOverlay);
+  });
+}
+
 async function removeEntry(id){
   const e = entries.find(x=>x.id===id);
   if(!e) return;
-  if(!confirm(`「${e.title}」を削除しますか？`)) return;
+  const ok = await confirmDialog(`「${e.title}」を削除しますか？`);
+  if(!ok) return;
   toast('削除中…');
   try{
     entries = await apiCall('delete', {id});
