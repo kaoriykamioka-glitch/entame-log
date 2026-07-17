@@ -68,6 +68,8 @@ function doPost(e){
       deleteEntry_(sheet, body.id);
     }else if(body.action === 'bulkUpsert'){
       (body.entries || []).forEach(function(entry){ upsertEntry_(sheet, entry); });
+    }else if(body.action === 'bulkDelete'){
+      bulkDeleteEntries_(sheet, body.ids || []);
     }else{
       return jsonOut_({ok:false, error:'unknown action'});
     }
@@ -99,6 +101,20 @@ function deleteEntry_(sheet, id){
     if(data[i][idCol] === id){
       sheet.deleteRow(i+1);
       return;
+    }
+  }
+}
+
+function bulkDeleteEntries_(sheet, ids){
+  if(!ids.length) return;
+  const idSet = {};
+  ids.forEach(function(id){ idSet[id] = true; });
+  const data = sheet.getDataRange().getValues();
+  const idCol = data[0].indexOf('id');
+  // 行削除でインデックスがずれないよう、下から上に向かって削除する
+  for(let i=data.length-1;i>=1;i--){
+    if(idSet[data[i][idCol]]){
+      sheet.deleteRow(i+1);
     }
   }
 }

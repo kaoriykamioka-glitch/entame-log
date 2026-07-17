@@ -121,6 +121,20 @@
     box-shadow:0 4px 14px rgba(31,42,61,.35);z-index:20;
   }
   .fab:active{transform:scale(.95)}
+  .fab.hide{display:none}
+  .card.selected{border-color:var(--spine);box-shadow:0 0 0 2px var(--spine)}
+  .select-check{display:flex;align-items:center;padding:0 2px 0 12px}
+  .select-check input{width:20px;height:20px}
+  .bulk-bar{
+    position:fixed;left:0;right:0;bottom:0;z-index:26;
+    background:var(--card);border-top:1px solid var(--line);
+    padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+    display:none;align-items:center;justify-content:space-between;gap:10px;
+    font-size:13px;color:var(--ink-soft);
+  }
+  .bulk-bar.show{display:flex}
+  .bulk-bar-actions{display:flex;gap:8px}
+  .bulk-bar-actions .btn{flex:none;padding:10px 16px}
   .overlay{
     position:fixed;inset:0;background:rgba(31,42,61,.45);
     display:none;align-items:flex-end;justify-content:center;z-index:30;
@@ -210,11 +224,20 @@
   <button class="link-btn" onclick="openIcsSheet()">カレンダーから取り込む</button>
   <button class="link-btn" onclick="exportJSON()">書き出し（保存用）</button>
   <button class="link-btn" onclick="document.getElementById('importFile').click()">読み込み</button>
+  <button class="link-btn" id="selectModeBtn" onclick="toggleSelectMode()">☑ まとめて削除</button>
   <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)">
 </footer>
 <div class="note">iPhoneのSafariで開くと、追加・編集した内容は端末に自動保存されます。</div>
 
-<button class="fab" onclick="openSheet()" aria-label="記録を追加">＋</button>
+<button class="fab" id="fabBtn" onclick="openSheet()" aria-label="記録を追加">＋</button>
+
+<div class="bulk-bar" id="bulkBar">
+  <span id="bulkCount">0件選択中</span>
+  <div class="bulk-bar-actions">
+    <button class="btn ghost" onclick="toggleSelectMode()">キャンセル</button>
+    <button class="btn primary" id="bulkDeleteBtn" onclick="bulkDeleteSelected()" disabled>削除する</button>
+  </div>
+</div>
 
 <div class="overlay" id="overlay" onclick="if(event.target===this)closeSheet()">
   <div class="sheet">
@@ -299,7 +322,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const BUILD_ID = '2026-07-17-2'; // 更新のたびにこの値を変更する（キャッシュ検知用）
+const BUILD_ID = '2026-07-17-3'; // 更新のたびにこの値を変更する（キャッシュ検知用）
 (function(){
   try{
     var already = sessionStorage.getItem('entame-log-cachecheck');
@@ -374,6 +397,8 @@ let storageOK = true;
 let genreFilter = 'all';
 let currentRating = 0;
 let expandedId = null;
+let selectMode = false;
+let selectedForDelete = new Set();
 
 try{
   localStorage.setItem('__t__','1'); localStorage.removeItem('__t__');
@@ -522,9 +547,12 @@ function renderCard(e){
   const genreLabel = resolveGenre(e.genre);
   const spineFontSize = genreLabel.length > 7 ? '10.5px' : (genreLabel.length > 4 ? '12px' : '14px');
   const spineLetterSpacing = genreLabel.length > 4 ? '.05em' : '.15em';
+  const checked = selectedForDelete.has(e.id);
+  const cardTopClick = selectMode ? `toggleSelectForDelete('${e.id}')` : `toggleExpand('${e.id}')`;
   return `
-    <div class="card" data-date="${esc(e.date||'')}">
-      <div class="card-top" onclick="toggleExpand('${e.id}')">
+    <div class="card ${selectMode && checked ? 'selected' : ''}" data-date="${esc(e.date||'')}">
+      <div class="card-top" onclick="${cardTopClick}">
+        ${selectMode ? `<div class="select-check"><input type="checkbox" ${checked?'checked':''} onclick="event.stopPropagation();toggleSelectForDelete('${e.id}')"></div>` : ''}
         <div class="spine" style="background:${genreColor(e.genre)};font-size:${spineFontSize};letter-spacing:${spineLetterSpacing}">${esc(genreLabel)}</div>
         <div class="body">
           <div class="row1">
@@ -539,6 +567,7 @@ function renderCard(e){
           </div>
         </div>
       </div>
+      ${selectMode ? '' : `
       <div class="detail ${open?'open':''}" id="detail-${e.id}">
         <div class="detail-inner">
           <div class="detail-block"><div class="detail-label">劇評</div><div class="detail-text">${e.review ? linkify(e.review) : '（未入力）'}</div></div>
@@ -548,8 +577,50 @@ function renderCard(e){
       <div class="actions">
         <button class="icon-btn" onclick="openSheet('${e.id}')" aria-label="編集">✎</button>
         <button class="icon-btn" onclick="removeEntry('${e.id}')" aria-label="削除">🗑</button>
-      </div>
+      </div>`}
     </div>`;
+}
+
+function toggleSelectMode(){
+  selectMode = !selectMode;
+  selectedForDelete = new Set();
+  document.getElementById('selectModeBtn').textContent = selectMode ? '選択モードを終了' : '☑ まとめて削除';
+  document.getElementById('bulkBar').classList.toggle('show', selectMode);
+  document.getElementById('fabBtn').classList.toggle('hide', selectMode);
+  updateBulkBar();
+  render();
+}
+
+function toggleSelectForDelete(id){
+  if(selectedForDelete.has(id)) selectedForDelete.delete(id); else selectedForDelete.add(id);
+  updateBulkBar();
+  render();
+}
+
+function updateBulkBar(){
+  document.getElementById('bulkCount').textContent = `${selectedForDelete.size}件選択中`;
+  document.getElementById('bulkDeleteBtn').disabled = selectedForDelete.size === 0;
+}
+
+async function bulkDeleteSelected(){
+  const n = selectedForDelete.size;
+  if(!n) return;
+  const ok = await confirmDialog(`選択した${n}件を削除しますか？`);
+  if(!ok) return;
+  toast('削除中…');
+  try{
+    entries = await apiCall('bulkDelete', {ids:[...selectedForDelete]});
+    persist();
+    selectMode = false;
+    selectedForDelete = new Set();
+    document.getElementById('selectModeBtn').textContent = '☑ まとめて削除';
+    document.getElementById('bulkBar').classList.remove('show');
+    document.getElementById('fabBtn').classList.remove('hide');
+    renderChips(); render();
+    toast(`${n}件削除しました`);
+  }catch(err){
+    toast('削除に失敗しました（通信環境をご確認ください）');
+  }
 }
 
 function toggleExpand(id){
