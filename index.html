@@ -295,6 +295,10 @@
       <div class="help-text" id="icsFileName">Googleカレンダーの設定 →「カレンダーの統合」にある該当カレンダーの「エクスポート」から書き出したicsファイルを選んでください。</div>
     </div>
     <div class="field">
+      <label>キーワードで絞り込み（任意・タイトルや場所に一致するものだけ表示）</label>
+      <input type="text" id="icsKeyword" placeholder="例：相撲" oninput="renderIcsList()">
+    </div>
+    <div class="field">
       <label>この日付以降の予定だけ表示（任意）</label>
       <input type="date" id="icsSinceDate" onchange="renderIcsList()">
     </div>
@@ -323,7 +327,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const BUILD_ID = '2026-07-17-9'; // 更新のたびにこの値を変更する（キャッシュ検知用）
+const BUILD_ID = '2026-07-17-10'; // 更新のたびにこの値を変更する（キャッシュ検知用）
 (function(){
   try{
     var already = sessionStorage.getItem('entame-log-cachecheck');
@@ -931,7 +935,7 @@ const GENRE_RULES = [
   {genre:'朗読会', kws:['朗読']},
   {genre:'美術館・博物館', kws:['展覧会','美術展','個展','美術館','博物館']},
   {genre:'街歩き・旅行', kws:['街歩き','旅行','ツアー','散策']},
-  {genre:'相撲', kws:['相撲','大相撲','十両','幕内','千秋楽','場所']}
+  {genre:'相撲', kws:['相撲','大相撲','十両','幕内']}
 ];
 const ALL_ICS_KEYWORDS = GENRE_RULES.flatMap(r=>r.kws);
 
@@ -1016,6 +1020,7 @@ function openIcsSheet(){
   icsEvents = [];
   icsSelected = new Set();
   document.getElementById('chkIcsShowAll').checked = false;
+  document.getElementById('icsKeyword').value = '';
   const dates = entries.map(e=>e.date).filter(Boolean).sort();
   document.getElementById('icsSinceDate').value = dates.length ? dates[dates.length-1] : '';
   document.getElementById('icsFileName').textContent =
@@ -1062,9 +1067,11 @@ function renderIcsList(){
   const list = document.getElementById('icsList');
   const showAll = document.getElementById('chkIcsShowAll').checked;
   const sinceDate = document.getElementById('icsSinceDate').value;
+  const keyword = document.getElementById('icsKeyword').value.trim().toLowerCase();
   const indices = icsEvents.map((e,i)=>i).filter(i=>{
     const e = icsEvents[i];
     if(sinceDate && e.date && e.date < sinceDate) return false;
+    if(keyword) return ((e.title||'')+(e.location||'')).toLowerCase().includes(keyword);
     if(showAll) return true;
     return matchesIcsKeyword((e.title||'')+(e.location||'')) || icsSelected.has(i);
   });
